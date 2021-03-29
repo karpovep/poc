@@ -1,4 +1,12 @@
-### PoC (Proof Of Concept)
+# PoC (Proof Of Concept)
+
+## Table Of Contents
+1. [PoC - General Idea](#General-Idea)
+2. [Technologies](#Technologies)
+3. [Acceptance Criteria](#Acceptance-Criteria)
+4. [Main Advantages](#Main-Advantages)
+
+### General Idea
 
 * it is running as a single process program
 * it is possible to run multiple instances of the program
@@ -15,7 +23,7 @@
 - HTTP/2 as a transport, GRPC protocol
 - Database(s) - TBD, not in scope of PoC
 
-### Acceptance criteria
+### Acceptance Criteria
 Basically, the following test case should pass:
 1. Run 2 instances of the program
 2. Instances should be able to connect between each other
@@ -30,7 +38,7 @@ Basically, the following test case should pass:
 * PoC transfers object between nodes;
 * Clients are getting notified with unprocessed objects which they were subscribed to
 
-### Main advantages
+### Main Advantages
 - easy to scale
 - no synchronisation between nodes, data transferring on-demand
 - supporting of custom types of object to be processed
