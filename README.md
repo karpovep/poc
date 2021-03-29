@@ -1,4 +1,6 @@
-# PoC (Proof Of Concept)
+# PoC
+
+The aim of this project is to build easy-to-scale distributed processing cloud with abilities to support custom types of objects as well as custom implementations of the processing services
 
 ## Table Of Contents
 0. [Definitions](#Definitions)
@@ -41,8 +43,7 @@ Basically, the following test case should pass:
 5. Run 2 clients: each client connects to different Node
 6. Each client should generate an object of another pre-defined type and push it into the program
 
-
-#### Expected behaviour:
+#### Expected behaviour
 * PoC accepts objects of 2 types;
 * PoC accepts subscription(s) from the client based on type of the object;
 * PoC transfers object(s) between Nodes based on rule - Node does not have registered subscriptions to process object(s);
