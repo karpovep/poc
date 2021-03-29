@@ -24,8 +24,15 @@ Basically, the following test case should pass:
 5. Run 2 instances of client, each client is connected to different instances of program
 6. Each client should generate an object of another pre-defined type and push it into the program
 
-Expected behaviour:
-PoC accepts objects of 2 types;
-PoC accepts subscription(s) from the client based on type of the object;
-PoC transfers object between nodes;
-Clients are getting notified with unprocessed objects which they were subscribed to
+#### Expected behaviour:
+* PoC accepts objects of 2 types;
+* PoC accepts subscription(s) from the client based on type of the object;
+* PoC transfers object between nodes;
+* Clients are getting notified with unprocessed objects which they were subscribed to
+
+### Main advantages
+- easy to scale
+- no synchronisation between nodes, data transferring on-demand
+- supporting of custom types of object to be processed
+- failover is handles by each node separately
+- agnostic implementation - can be used for different processing purposes
