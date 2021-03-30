@@ -4,10 +4,11 @@ The aim of this project is to build easy-to-scale distributed processing cloud w
 
 ## Table Of Contents
 0. [Definitions](#Definitions)
-1. [PoC - General Idea](#General-Idea)
+1. [PoC - General Idea](#General Idea)
 2. [Technologies](#Technologies)
-3. [Acceptance Criteria](#Acceptance-Criteria)
-4. [Main Advantages](#Main-Advantages)
+3. [Acceptance Criteria](#Acceptance Criteria)
+4. [Main Advantages](#Main Advantages)
+4. [Open Questions](#Open Questions)
 
 ### Definitions
 
@@ -17,20 +18,18 @@ The aim of this project is to build easy-to-scale distributed processing cloud w
 
 ### General Idea
 
-* it is running as a Node
-* it is possible to run as many Nodes as needed
-* each Node should implement the following functionality:
-    * accept configuration to be able to connect to other instances
-    * serve HTTP/2 to accept incoming connections from other instances
-    * accept connections from the clients (separate server - ? TBD)
-    * subscriptions from clients to objects by type
-    * daemon functionality for monitoring in-memory objects and transferring objects between instances
-    
+Each Node should implement the following functionality:
+* accept configuration to be able to connect to other Nodes
+* serve HTTP/2 to accept incoming connections from other Nodes
+* accept connections from the clients (same server VS another one - ? TBD)
+* subscriptions from clients to objects by type
+* daemon functionality for monitoring in-memory objects and transferring objects between instances
+
 
 ### Technologies
 
-- Programming language - GO Lang ?
-- HTTP/2 as a transport, GRPC vs capn proto
+- Programming language - GO Lang VS Java ?
+- HTTP/2 as a transport, grpc VS capn proto
 - Database(s) - TBD, not in scope of PoC
 
 
@@ -56,3 +55,9 @@ Basically, the following test case should pass:
 - supporting of custom types of objects to be processed
 - failover is handled by each node separately, failing of any Node does not affect entire network of Node(s)
 - agnostic implementation - can be used for different processing purposes based on business needs
+
+
+### Open Questions
+- allow to define custom types to clients
+- internal objects schemas
+- objects state management
