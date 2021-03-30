@@ -4,11 +4,11 @@ The aim of this project is to build easy-to-scale distributed processing cloud w
 
 ## Table Of Contents
 0. [Definitions](#Definitions)
-1. [PoC - General Idea](#General Idea)
+1. [PoC - General Idea](#General-Idea)
 2. [Technologies](#Technologies)
-3. [Acceptance Criteria](#Acceptance Criteria)
-4. [Main Advantages](#Main Advantages)
-4. [Open Questions](#Open Questions)
+3. [Acceptance Criteria](#Acceptance-Criteria)
+4. [Main Advantages](#Main-Advantages)
+4. [Open Questions](#Open-Questions)
 
 ### Definitions
 
