@@ -46,7 +46,12 @@ func main() {
 			if err != nil {
 				log.Fatal("stream.Recv error", err)
 			}
-			log.Println(obj)
+			var ent cloud.TestEntity
+			if err := obj.Entity.UnmarshalTo(&ent); err != nil {
+				log.Fatalf("Could not unmarshal TestEntity from any field: %s", err)
+			}
+
+			log.Println(ent.Name)
 		}
 	}()
 
