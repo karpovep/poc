@@ -16,13 +16,11 @@ The aim of this project is to build easy-to-scale distributed processing cloud w
 8. [Diagrams](#Diagrams)
 
 ### Definitions
-
 - **PoC** - Proof Of Concept
 - **Node** - single instance of program (service)
 
 
 ### General Idea
-
 Each Node should implement the following functionality:
 * accept configuration to be able to connect to other Nodes
 * serve HTTP/2 to accept incoming connections from other Nodes
@@ -32,16 +30,15 @@ Each Node should implement the following functionality:
 
 
 ### Technologies
-
-- Programming language - GO Lang VS Java ?
-- HTTP/2 as a transport, grpc VS capn proto
-- Database(s) - TBD, not in scope of PoC (Cassandra could be considered as an option, need to check it works with updates and transactions)
+- Programming language - GO Lang?
+- HTTP/2 as a transport, grpc
+- Database(s) - TBD, not in scope of PoC (Cassandra should be considered as an option, need to check how it works with updates and transactions)
 
 
 ### Acceptance Criteria
 Basically, the following test case should pass:
 1. Run 2 Nodes
-2. Nodes should be able to connect between each other
+2. Nodes has to be able to connect between each other
 3. Define 2 simple type of objects (references to each other are not required)
 4. Implement simple client which can connect to a Node and subscribe for receiving objects of 1 pre-defined type
 5. Run 2 clients: each client connects to different Node
