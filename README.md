@@ -12,7 +12,8 @@ The aim of this project is to build easy-to-scale distributed processing cloud w
 4. [Main Advantages](#Main-Advantages)
 5. [Open Questions](#Open-Questions)
 6. [Roadmap](#Roadmap)
-6. [Documentation](docs/index.md)
+7. [Documentation](docs/index.md)
+8. [Diagrams](#Diagrams)
 
 ### Definitions
 
@@ -76,3 +77,6 @@ Basically, the following test case should pass:
 - Reporting & Analytics
 - ...
 - Centralised cloud network
+
+### Diagrams
+- [Basic Architecture View](https://drive.google.com/file/d/1ukPn3U78vHxhr7BJNcWFetokQS_1pMXa/view)
