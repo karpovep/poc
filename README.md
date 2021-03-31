@@ -1,14 +1,16 @@
 # PoC
 
-The aim of this project is to build easy-to-scale distributed processing cloud with abilities to support custom types of objects as well as custom implementations of the processing services
+The aim of this project is to build easy-to-scale distributed processing cloud with abilities to support custom types of objects as well as custom implementations of the processing services to be able to meet all of the required business needs
 
 ## Table Of Contents
 0. [Definitions](#Definitions)
-1. [PoC - General Idea](#General-Idea)
+1. [General Idea](#General-Idea)
 2. [Technologies](#Technologies)
 3. [Acceptance Criteria](#Acceptance-Criteria)
 4. [Main Advantages](#Main-Advantages)
-4. [Open Questions](#Open-Questions)
+5. [Open Questions](#Open-Questions)
+6. [Roadmap](#Roadmap)
+6. [Documentation](docs/index.md)
 
 ### Definitions
 
@@ -30,7 +32,7 @@ Each Node should implement the following functionality:
 
 - Programming language - GO Lang VS Java ?
 - HTTP/2 as a transport, grpc VS capn proto
-- Database(s) - TBD, not in scope of PoC
+- Database(s) - TBD, not in scope of PoC (Cassandra could be considered as an option, need to check it works with updates and transactions)
 
 
 ### Acceptance Criteria
@@ -61,3 +63,14 @@ Basically, the following test case should pass:
 - allow to define custom types to clients
 - internal objects schemas
 - objects state management
+- example to be implemented for the demo purpose
+
+### Roadmap
+- Implement simplified PoC (1 server node and 1 client)
+- Implement PoC (2 nodes + 2 clients)
+- introduce data storage (store data + querying data)
+- Failover handling
+- Logging and monitoring
+- Reporting & Analytics
+- ...
+- Centralised cloud network

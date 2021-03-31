@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+option go_package = "cloud/cloud";
+import "google/protobuf/any.proto";
+
+package protos;
+
+// service definition.
+service Cloud {
+    rpc Commit (CloudObject) returns (OperationResult) {}
+    rpc Subscribe(SubscribeRequest) returns (stream CloudObject) {}
+}
+
+message CloudObject {
+    google.protobuf.Any entity = 1;
+}
+
+enum OperationStatus {
+    OK = 0;
+    ERROR = 1;
+}
+
+message OperationResult {
+    OperationStatus status = 1;
+}
+
+message TestEntity {
+    string name = 1;
+}
+
+message SubscribeRequest {
+    string type = 1;
+}
