@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"google.golang.org/config"
 	cloud "google.golang.org/protos"
 	"log"
 	"net"
@@ -10,10 +11,6 @@ import (
 
 	"github.com/google/uuid"
 	"google.golang.org/grpc"
-)
-
-const (
-	port = ":50051" // todo - config
 )
 
 // server is used to implement Cloud
@@ -36,17 +33,14 @@ func (s *server) Commit(ctx context.Context, in *cloud.CloudObject) (*cloud.Oper
 
 func (s *server) Subscribe(in *cloud.SubscribeRequest, stream cloud.Cloud_SubscribeServer) error {
 	for {
-		timer := time.NewTimer(time.Second * 2)
-		select {
-		case <-timer.C:
-			fmt.Println("checking subscriptions...")
-			for _, obj := range s.objects {
-				fmt.Println("obj", obj.Entity)
-				if obj.Entity.TypeUrl == in.Type {
-					err := stream.Send(obj)
-					if err != nil {
-						log.Fatalf("stream.Send: %v", err)
-					}
+		time.Sleep(time.Second * 2)
+		fmt.Println("checking subscriptions...")
+		for _, obj := range s.objects {
+			fmt.Println("obj", obj.Entity)
+			if obj.Entity.TypeUrl == in.Type {
+				err := stream.Send(obj)
+				if err != nil {
+					log.Fatalf("stream.Send: %v", err)
 				}
 			}
 		}
@@ -54,7 +48,9 @@ func (s *server) Subscribe(in *cloud.SubscribeRequest, stream cloud.Cloud_Subscr
 }
 
 func main() {
-	lis, err := net.Listen("tcp", port)
+	cfg := config.Init("config.yml").Server
+
+	lis, err := net.Listen("tcp", cfg.Port)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}

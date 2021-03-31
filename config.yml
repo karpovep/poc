@@ -1,0 +1,4 @@
+server:
+  port: :50052
+client:
+  serverAddress: localhost:50052

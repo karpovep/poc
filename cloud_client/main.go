@@ -2,25 +2,25 @@ package main
 
 import (
 	"context"
+	"google.golang.org/config"
 	"google.golang.org/protobuf/types/known/anypb"
 	cloud "google.golang.org/protos"
 	"io"
 	"log"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"google.golang.org/grpc"
-)
-
-const (
-	address = "localhost:50051" // todo - config
+	"google.golang.org/protobuf/proto"
 )
 
 func main() {
+	cfg := config.Init("config.yml").Client
+
 	// Set up a connection to the server.
-	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
+	conn, err := grpc.Dial(cfg.ServerAddress, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
@@ -31,7 +31,8 @@ func main() {
 	defer cancel()
 
 	val := &cloud.TestEntity{Name: "First Cloud Client"}
-	typeToSubscribeTo := "cloud/" + proto.MessageName(val)
+
+	typeToSubscribeTo := string(val.ProtoReflect().Descriptor().FullName())
 	go func() {
 		stream, err := c.Subscribe(context.Background(), &cloud.SubscribeRequest{Type: typeToSubscribeTo})
 		if err != nil {
@@ -43,7 +44,7 @@ func main() {
 				break
 			}
 			if err != nil {
-				log.Fatalf("stream.Recv error", err)
+				log.Fatal("stream.Recv error", err)
 			}
 			log.Println(obj)
 		}
@@ -53,7 +54,7 @@ func main() {
 	if err != nil {
 		log.Fatal("could not serialize", err)
 	}
-	msg := &anypb.Any{TypeUrl: "cloud/" + proto.MessageName(val), Value: serialized}
+	msg := &anypb.Any{TypeUrl: string(val.ProtoReflect().Descriptor().FullName()), Value: serialized}
 	opRes, err := c.Commit(ctx, &cloud.CloudObject{Entity: msg})
 	if err != nil {
 		log.Fatalf("could not greet: %v", err)
@@ -63,7 +64,7 @@ func main() {
 	//hang the process
 	done := make(chan bool, 1)
 	interrupt := make(chan os.Signal)
-	signal.Notify(interrupt, os.Interrupt, os.Kill)
+	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-interrupt
 		done <- true
