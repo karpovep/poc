@@ -2,7 +2,7 @@
 
 * To compile protoc
 ```$bash
-./compile_protos
+scripts/compile_protos.sh
 ```
 
 * To run cloud server
