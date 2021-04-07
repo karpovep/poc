@@ -2,13 +2,13 @@ package main
 
 import (
 	"context"
-	"google.golang.org/config"
 	"google.golang.org/protobuf/types/known/anypb"
-	cloud "google.golang.org/protos"
 	"io"
 	"log"
 	"os"
 	"os/signal"
+	"poc/config"
+	cloud "poc/protos"
 	"syscall"
 	"time"
 
@@ -32,11 +32,22 @@ func main() {
 
 	val := &cloud.TestEntity{Name: "First Cloud Client"}
 
-	typeToSubscribeTo := string(val.ProtoReflect().Descriptor().FullName())
 	go func() {
-		stream, err := c.Subscribe(context.Background(), &cloud.SubscribeRequest{Type: typeToSubscribeTo})
+		subscribeRequest := &cloud.SubscribeRequest{}
+		typeToSubscribeTo := string(subscribeRequest.ProtoReflect().Descriptor().FullName())
+		subscribeRequest.Type = typeToSubscribeTo
+		serializedReq, err := proto.Marshal(subscribeRequest)
+		if err != nil {
+			log.Fatal("could not serialize", err)
+		}
+		msg := &anypb.Any{TypeUrl: string(subscribeRequest.ProtoReflect().Descriptor().FullName()), Value: serializedReq}
+		stream, err := c.Subscribe(context.Background())
 		if err != nil {
 			log.Fatal("Subscribe error", err)
+		}
+		err = stream.Send(&cloud.CloudObject{Entity: msg})
+		if err != nil {
+			log.Fatalf("stream.Send: %v", err)
 		}
 		for {
 			obj, err := stream.Recv()

@@ -24,3 +24,13 @@ GO111MODULE=on go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.26.
 ```$bash
 golangci-lint run
 ```
+
+* To generate mocks
+```$bash
+scripts/mock_gen.sh
+```
+
+* To run tests
+```$bash
+scripts/run_tests.sh
+```

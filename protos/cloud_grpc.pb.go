@@ -19,7 +19,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type CloudClient interface {
 	Commit(ctx context.Context, in *CloudObject, opts ...grpc.CallOption) (*OperationResult, error)
-	Subscribe(ctx context.Context, in *SubscribeRequest, opts ...grpc.CallOption) (Cloud_SubscribeClient, error)
+	Subscribe(ctx context.Context, opts ...grpc.CallOption) (Cloud_SubscribeClient, error)
 }
 
 type cloudClient struct {
@@ -39,28 +39,27 @@ func (c *cloudClient) Commit(ctx context.Context, in *CloudObject, opts ...grpc.
 	return out, nil
 }
 
-func (c *cloudClient) Subscribe(ctx context.Context, in *SubscribeRequest, opts ...grpc.CallOption) (Cloud_SubscribeClient, error) {
+func (c *cloudClient) Subscribe(ctx context.Context, opts ...grpc.CallOption) (Cloud_SubscribeClient, error) {
 	stream, err := c.cc.NewStream(ctx, &Cloud_ServiceDesc.Streams[0], "/protos.Cloud/Subscribe", opts...)
 	if err != nil {
 		return nil, err
 	}
 	x := &cloudSubscribeClient{stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
 	return x, nil
 }
 
 type Cloud_SubscribeClient interface {
+	Send(*CloudObject) error
 	Recv() (*CloudObject, error)
 	grpc.ClientStream
 }
 
 type cloudSubscribeClient struct {
 	grpc.ClientStream
+}
+
+func (x *cloudSubscribeClient) Send(m *CloudObject) error {
+	return x.ClientStream.SendMsg(m)
 }
 
 func (x *cloudSubscribeClient) Recv() (*CloudObject, error) {
@@ -76,7 +75,7 @@ func (x *cloudSubscribeClient) Recv() (*CloudObject, error) {
 // for forward compatibility
 type CloudServer interface {
 	Commit(context.Context, *CloudObject) (*OperationResult, error)
-	Subscribe(*SubscribeRequest, Cloud_SubscribeServer) error
+	Subscribe(Cloud_SubscribeServer) error
 	mustEmbedUnimplementedCloudServer()
 }
 
@@ -87,7 +86,7 @@ type UnimplementedCloudServer struct {
 func (UnimplementedCloudServer) Commit(context.Context, *CloudObject) (*OperationResult, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Commit not implemented")
 }
-func (UnimplementedCloudServer) Subscribe(*SubscribeRequest, Cloud_SubscribeServer) error {
+func (UnimplementedCloudServer) Subscribe(Cloud_SubscribeServer) error {
 	return status.Errorf(codes.Unimplemented, "method Subscribe not implemented")
 }
 func (UnimplementedCloudServer) mustEmbedUnimplementedCloudServer() {}
@@ -122,15 +121,12 @@ func _Cloud_Commit_Handler(srv interface{}, ctx context.Context, dec func(interf
 }
 
 func _Cloud_Subscribe_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(SubscribeRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(CloudServer).Subscribe(m, &cloudSubscribeServer{stream})
+	return srv.(CloudServer).Subscribe(&cloudSubscribeServer{stream})
 }
 
 type Cloud_SubscribeServer interface {
 	Send(*CloudObject) error
+	Recv() (*CloudObject, error)
 	grpc.ServerStream
 }
 
@@ -140,6 +136,14 @@ type cloudSubscribeServer struct {
 
 func (x *cloudSubscribeServer) Send(m *CloudObject) error {
 	return x.ServerStream.SendMsg(m)
+}
+
+func (x *cloudSubscribeServer) Recv() (*CloudObject, error) {
+	m := new(CloudObject)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 // Cloud_ServiceDesc is the grpc.ServiceDesc for Cloud service.
@@ -159,6 +163,7 @@ var Cloud_ServiceDesc = grpc.ServiceDesc{
 			StreamName:    "Subscribe",
 			Handler:       _Cloud_Subscribe_Handler,
 			ServerStreams: true,
+			ClientStreams: true,
 		},
 	},
 	Metadata: "protos/cloud.proto",

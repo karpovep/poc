@@ -8,7 +8,7 @@ package protos;
 // service definition.
 service Cloud {
     rpc Commit (CloudObject) returns (OperationResult) {}
-    rpc Subscribe(SubscribeRequest) returns (stream CloudObject) {}
+    rpc Subscribe(stream CloudObject) returns (stream CloudObject) {}
 }
 
 message CloudObject {

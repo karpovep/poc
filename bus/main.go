@@ -13,13 +13,18 @@ type DataChannel chan DataEvent
 // DataChannelSlice is a slice of DataChannels
 type DataChannelSlice []DataChannel
 
+type IEventBus interface {
+	Subscribe(topic string, ch DataChannel)
+	Publish(topic string, data interface{})
+}
+
 // EventBus stores the information about subscribers interested for // a particular topic
 type EventBus struct {
 	subscribers map[string]DataChannelSlice
 	rm          sync.RWMutex
 }
 
-func NewEventBus() *EventBus {
+func NewEventBus() IEventBus {
 	return &EventBus{
 		subscribers: map[string]DataChannelSlice{},
 	}
