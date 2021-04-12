@@ -78,3 +78,4 @@ Basically, the following test case should pass:
 ### Diagrams
 - [Basic Architecture View](https://drive.google.com/file/d/1ukPn3U78vHxhr7BJNcWFetokQS_1pMXa/view)
 - [Server Node Components](https://drive.google.com/file/d/1JG-yAHjmxeNS6PgxwnjE62t4KoFMdgH5/view)
+- [Basic Sequence Diagram](https://drive.google.com/file/d/1AGZXQFtNuUlxJsOziDhPfv7i8YBmQfeR/view)
