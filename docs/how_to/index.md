@@ -7,7 +7,7 @@ scripts/compile_protos.sh
 
 * To run cloud server
 ```$bash
-go run cloud_server/main.go
+go run main.go
 ```
 
 * To run cloud client

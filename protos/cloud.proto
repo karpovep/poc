@@ -12,7 +12,9 @@ service Cloud {
 }
 
 message CloudObject {
-    google.protobuf.Any entity = 1;
+    string id = 1;
+    google.protobuf.Any entity = 2;
+    bool processed = 3;
 }
 
 enum OperationStatus {
@@ -30,4 +32,8 @@ message TestEntity {
 
 message SubscribeRequest {
     string type = 1;
+}
+
+message Acknowledge {
+
 }

@@ -34,13 +34,16 @@ func main() {
 
 	go func() {
 		subscribeRequest := &cloud.SubscribeRequest{}
-		typeToSubscribeTo := string(subscribeRequest.ProtoReflect().Descriptor().FullName())
+		typeToSubscribeTo := string(val.ProtoReflect().Descriptor().FullName())
 		subscribeRequest.Type = typeToSubscribeTo
 		serializedReq, err := proto.Marshal(subscribeRequest)
 		if err != nil {
 			log.Fatal("could not serialize", err)
 		}
 		msg := &anypb.Any{TypeUrl: string(subscribeRequest.ProtoReflect().Descriptor().FullName()), Value: serializedReq}
+		//subscribeContext, cancelSubCtx := context.WithCancel(context.Background())
+		//defer cancelSubCtx()
+		//stream, err := c.Subscribe(subscribeContext)
 		stream, err := c.Subscribe(context.Background())
 		if err != nil {
 			log.Fatal("Subscribe error", err)
@@ -66,6 +69,7 @@ func main() {
 		}
 	}()
 
+	time.Sleep(time.Second)
 	serialized, err := proto.Marshal(val)
 	if err != nil {
 		log.Fatal("could not serialize", err)

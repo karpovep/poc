@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-func Test_ShouldRegisterSubscriptionSuccessfullyAndSendIncomingObjectViaStream(t *testing.T) {
+func Test_ShouldRegisterSubscriptionSuccessfullyAndSendIncomingObjectViaStreamAndUnregisterSubscription(t *testing.T) {
 	// Given
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -24,12 +24,14 @@ func Test_ShouldRegisterSubscriptionSuccessfullyAndSendIncomingObjectViaStream(t
 	incomingChan := make(bus.DataChannel)
 
 	entity := &cloud.TestEntity{Name: "My Test Entity"}
+	entityType := string(entity.ProtoReflect().Descriptor().FullName())
 	serialized, err := proto.Marshal(entity)
 	if err != nil {
 		t.Fatal("could not serialize:", err)
 	}
+	cloudObj := &cloud.CloudObject{Entity: &anypb.Any{TypeUrl: entityType, Value: serialized}}
 	dataEvent := bus.DataEvent{
-		Data:  &anypb.Any{TypeUrl: string(entity.ProtoReflect().Descriptor().FullName()), Value: serialized},
+		Data:  cloudObj,
 		Topic: incomingTopic,
 	}
 
@@ -41,6 +43,7 @@ func Test_ShouldRegisterSubscriptionSuccessfullyAndSendIncomingObjectViaStream(t
 	mockUtils.EXPECT().GenerateUuid().Return(mockSubId)
 
 	mockStream := cloud_mock.NewMockCloud_SubscribeServer(mockCtrl)
+	mockStream.EXPECT().Send(cloudObj)
 
 	mockAppContext := app_mock.NewMockIAppContext(mockCtrl)
 	mockAppContext.EXPECT().Get("eventBus").Return(mockEventBus)
@@ -50,10 +53,13 @@ func Test_ShouldRegisterSubscriptionSuccessfullyAndSendIncomingObjectViaStream(t
 
 	subscriptionManager := NewSubscriptionManager(mockAppContext)
 
+	clientCloseChan := make(chan bool)
+
 	// When
-	err = subscriptionManager.RegisterSubscription("mockObjType", mockStream)
+	subId, err := subscriptionManager.RegisterSubscription(entityType, mockStream, clientCloseChan)
 	incomingChan <- dataEvent
-	time.Sleep(time.Second) //todo
+	time.Sleep(time.Millisecond * 100) // wait for the event to be processed
+	subscriptionManager.UnregisterSubscription(entityType, subId)
 
 	// Then
 	assert.Equal(t, nil, err, "RegisterSubscription should not return an error")

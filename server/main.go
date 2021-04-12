@@ -26,6 +26,7 @@ type (
 		Config              *config.CloudConfig
 		errChan             chan error
 		server              *grpc.Server
+		incomingTopic       string
 	}
 )
 
@@ -34,11 +35,13 @@ func NewGrpcServer(appContext app.IAppContext) IGrpcServer {
 	subscriptionManager := appContext.Get("subscriptionManager").(subscriptions.ISubscriptionManager)
 	cfg := appContext.Get("config").(*config.CloudConfig)
 	errChan := appContext.Get("errChan").(chan error)
+	incomingTopic := appContext.Get("incomingTopic").(string)
 	return &GrpcServer{
 		EventBus:            eventBus,
 		SubscriptionManager: subscriptionManager,
 		Config:              cfg,
 		errChan:             errChan,
+		incomingTopic:       incomingTopic,
 	}
 }
 
@@ -77,17 +80,26 @@ func (s *GrpcServer) Subscribe(stream cloud.Cloud_SubscribeServer) error {
 		return nil
 	}
 
+	clientCloseChan := make(chan bool)
 	// subscribe client
-	err = s.SubscriptionManager.RegisterSubscription(subscribeRequest.Type, stream)
+	subscriptionId, err := s.SubscriptionManager.RegisterSubscription(subscribeRequest.Type, stream, clientCloseChan)
 	if err != nil {
 		log.Println("ERROR: RegisterSubscription", err)
 		return nil
 	}
 
+	select {
+	case <-clientCloseChan:
+		log.Println("Closing stream for client:", subscriptionId)
+	case <-stream.Context().Done():
+		log.Println("stream.Context().Done()")
+	}
+	s.SubscriptionManager.UnregisterSubscription(subscribeRequest.Type, subscriptionId)
 	return nil
 }
 
-func (s *GrpcServer) Commit(ctx context.Context, in *cloud.CloudObject) (*cloud.OperationResult, error) {
-	fmt.Println(in)
+func (s *GrpcServer) Commit(ctx context.Context, incomingObject *cloud.CloudObject) (*cloud.OperationResult, error) {
+	fmt.Println("incomingObject", incomingObject, incomingObject.Id, incomingObject.Processed)
+	s.EventBus.Publish(s.incomingTopic, incomingObject)
 	return &cloud.OperationResult{Status: cloud.OperationStatus_OK}, nil
 }

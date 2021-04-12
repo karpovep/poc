@@ -42,6 +42,7 @@ func main() {
 	defer func() {
 		log.Println("Stopping the app...")
 		// do graceful stop of required resources here in right order
+		subscriptionManager.Stop()
 		grpcServer.Stop()
 		log.Println("App has been stopped")
 	}()
