@@ -8,6 +8,7 @@ import (
 	"poc/bus"
 	"poc/config"
 	"poc/server"
+	"poc/daemon"
 	"poc/subscriptions"
 	utilsPkg "poc/utils"
 	"syscall"
@@ -26,6 +27,8 @@ func main() {
 	eventBus := bus.NewEventBus()
 	incomingTopic := "incoming"
 	incomingChan := make(bus.DataChannel)
+	daemonIncomingTopic := "daemonIncomingTopic"
+	daemonOutcomigTopic := "daemonOutcomigTopic"
 
 	appContext.Set("errChan", errChan)
 	appContext.Set("config", cfg)
@@ -33,10 +36,15 @@ func main() {
 	appContext.Set("eventBus", eventBus)
 	appContext.Set("incomingTopic", incomingTopic)
 	appContext.Set("incomingChan", incomingChan)
+	appContext.Set("daemonIncomingTopic", daemonIncomingTopic)
+	appContext.Set("daemonOutcomigTopic", daemonOutcomigTopic)
 
 	subscriptionManager := subscriptions.NewSubscriptionManager(appContext)
 	appContext.Set("subscriptionManager", subscriptionManager)
 
+	daemon := daemon.NewDaemon(appContext)
+	appContext.Set("daemon", daemon)
+	
 	grpcServer := server.NewGrpcServer(appContext)
 
 	defer func() {
@@ -52,6 +60,8 @@ func main() {
 	grpcServer.Start()
 	log.Println("App has been started")
 
+	//start daemon
+	daemon.Start()
 	// block until either OS signal, or fatal error
 	select {
 	case err := <-errChan:

@@ -1,4 +1,9 @@
 server:
   port: :50052
+  nodes:
+    - localhost:50053
+    - localhost:50054
+    - localhost:50055
+
 client:
   serverAddress: localhost:50052
