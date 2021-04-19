@@ -7,6 +7,7 @@ import (
 	"poc/app"
 	"poc/bus"
 	"poc/config"
+	"poc/model"
 	"poc/server"
 	"poc/subscriptions"
 	utilsPkg "poc/utils"
@@ -24,15 +25,19 @@ func main() {
 	appContext := app.NewApplicationContext()
 	utils := utilsPkg.NewUtils()
 	eventBus := bus.NewEventBus()
-	incomingTopic := "incoming"
+	inboundChannelName := "inbound"
+	outboundChannelName := "outbound"
+	processedChannelName := "processed"
 	incomingChan := make(bus.DataChannel)
 
 	appContext.Set("errChan", errChan)
 	appContext.Set("config", cfg)
 	appContext.Set("utils", utils)
 	appContext.Set("eventBus", eventBus)
-	appContext.Set("incomingTopic", incomingTopic)
-	appContext.Set("incomingChan", incomingChan)
+	appContext.Set(model.INBOUND_CHANNEL_NAME, inboundChannelName)
+	appContext.Set(model.OUTBOUND_CHANNEL_NAME, outboundChannelName)
+	appContext.Set(model.PROCESSED_CHANNEL_NAME, processedChannelName)
+	appContext.Set("inboundChan", incomingChan)
 
 	subscriptionManager := subscriptions.NewSubscriptionManager(appContext)
 	appContext.Set("subscriptionManager", subscriptionManager)
@@ -42,8 +47,8 @@ func main() {
 	defer func() {
 		log.Println("Stopping the app...")
 		// do graceful stop of required resources here in right order
-		subscriptionManager.Stop()
 		grpcServer.Stop()
+		subscriptionManager.Stop()
 		log.Println("App has been stopped")
 	}()
 

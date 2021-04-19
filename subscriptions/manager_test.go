@@ -8,6 +8,7 @@ import (
 	"poc/app/app_mock"
 	"poc/bus"
 	"poc/bus/bus_mock"
+	"poc/model"
 	cloud "poc/protos"
 	cloud_mock "poc/protos/protos_mock"
 	"poc/utils/utils_mock"
@@ -15,13 +16,15 @@ import (
 	"time"
 )
 
-func Test_ShouldRegisterSubscriptionSuccessfullyAndSendIncomingObjectViaStreamAndUnregisterSubscription(t *testing.T) {
+func Test_ShouldHandleObjectFromInboundChannelByPublishingItToOutboundChannelIfThereIsNoAnySubscription(t *testing.T) {
 	// Given
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	incomingTopic := "incoming"
-	incomingChan := make(bus.DataChannel)
+	inboundChannelName := "inbound.test"
+	outboundChannelName := "outbound.test"
+	processedChannelName := "processed.test"
+	inboundChan := make(bus.DataChannel)
 
 	entity := &cloud.TestEntity{Name: "My Test Entity"}
 	entityType := string(entity.ProtoReflect().Descriptor().FullName())
@@ -30,13 +33,61 @@ func Test_ShouldRegisterSubscriptionSuccessfullyAndSendIncomingObjectViaStreamAn
 		t.Fatal("could not serialize:", err)
 	}
 	cloudObj := &cloud.CloudObject{Entity: &anypb.Any{TypeUrl: entityType, Value: serialized}}
+	internalServerObject := model.NewInternalServerObject(cloudObj)
 	dataEvent := bus.DataEvent{
-		Data:  cloudObj,
-		Topic: incomingTopic,
+		Data:  internalServerObject,
+		Topic: inboundChannelName,
 	}
 
 	mockEventBus := bus_mock.NewMockIEventBus(mockCtrl)
-	mockEventBus.EXPECT().Subscribe(incomingTopic, incomingChan)
+	mockEventBus.EXPECT().Subscribe(inboundChannelName, inboundChan)
+	mockEventBus.EXPECT().Publish(outboundChannelName, internalServerObject)
+
+	mockUtils := utils_mock.NewMockIUtils(mockCtrl)
+
+	mockAppContext := app_mock.NewMockIAppContext(mockCtrl)
+	mockAppContext.EXPECT().Get("eventBus").Return(mockEventBus)
+	mockAppContext.EXPECT().Get("utils").Return(mockUtils)
+	mockAppContext.EXPECT().Get("inboundChan").Return(inboundChan)
+	mockAppContext.EXPECT().Get(model.INBOUND_CHANNEL_NAME).Return(inboundChannelName)
+	mockAppContext.EXPECT().Get(model.OUTBOUND_CHANNEL_NAME).Return(outboundChannelName)
+	mockAppContext.EXPECT().Get(model.PROCESSED_CHANNEL_NAME).Return(processedChannelName)
+
+	NewSubscriptionManager(mockAppContext)
+
+	// When
+	inboundChan <- dataEvent
+	time.Sleep(time.Millisecond * 100) // wait for the event to be processed
+
+	// Then - all expected calls are done
+}
+
+func Test_ShouldRegisterSubscriptionSuccessfullyAndSendObjectViaStreamAndReceiveAcknowledgementAndUnregisterSubscription(t *testing.T) {
+	// Given
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	inboundChannelName := "inbound.test"
+	outboundChannelName := "outbound.test"
+	processedChannelName := "processed.test"
+	inboundChan := make(bus.DataChannel)
+
+	entity := &cloud.TestEntity{Name: "My Test Entity"}
+	entityType := string(entity.ProtoReflect().Descriptor().FullName())
+	serialized, err := proto.Marshal(entity)
+	if err != nil {
+		t.Fatal("could not serialize:", err)
+	}
+	cloudObj := &cloud.CloudObject{Entity: &anypb.Any{TypeUrl: entityType, Value: serialized}}
+	internalServerObject := model.NewInternalServerObject(cloudObj)
+	dataEvent := bus.DataEvent{
+		Data:  internalServerObject,
+		Topic: inboundChannelName,
+	}
+
+	mockEventBus := bus_mock.NewMockIEventBus(mockCtrl)
+	mockEventBus.EXPECT().Subscribe(inboundChannelName, inboundChan)
+	mockEventBus.EXPECT().Publish(processedChannelName, internalServerObject)
 
 	mockUtils := utils_mock.NewMockIUtils(mockCtrl)
 	mockSubId := "mock-sub-id"
@@ -44,12 +95,21 @@ func Test_ShouldRegisterSubscriptionSuccessfullyAndSendIncomingObjectViaStreamAn
 
 	mockStream := cloud_mock.NewMockCloud_SubscribeServer(mockCtrl)
 	mockStream.EXPECT().Send(cloudObj)
+	mockAck := &cloud.Acknowledge{}
+	ackType := string(mockAck.ProtoReflect().Descriptor().FullName())
+	serializedAck, err := proto.Marshal(entity)
+	if err != nil {
+		t.Fatal("could not serialize:", err)
+	}
+	mockStream.EXPECT().Recv().Return(&cloud.CloudObject{Entity: &anypb.Any{TypeUrl: ackType, Value: serializedAck}}, nil)
 
 	mockAppContext := app_mock.NewMockIAppContext(mockCtrl)
 	mockAppContext.EXPECT().Get("eventBus").Return(mockEventBus)
 	mockAppContext.EXPECT().Get("utils").Return(mockUtils)
-	mockAppContext.EXPECT().Get("incomingChan").Return(incomingChan)
-	mockAppContext.EXPECT().Get("incomingTopic").Return(incomingTopic)
+	mockAppContext.EXPECT().Get("inboundChan").Return(inboundChan)
+	mockAppContext.EXPECT().Get(model.INBOUND_CHANNEL_NAME).Return(inboundChannelName)
+	mockAppContext.EXPECT().Get(model.OUTBOUND_CHANNEL_NAME).Return(outboundChannelName)
+	mockAppContext.EXPECT().Get(model.PROCESSED_CHANNEL_NAME).Return(processedChannelName)
 
 	subscriptionManager := NewSubscriptionManager(mockAppContext)
 
@@ -57,10 +117,11 @@ func Test_ShouldRegisterSubscriptionSuccessfullyAndSendIncomingObjectViaStreamAn
 
 	// When
 	subId, err := subscriptionManager.RegisterSubscription(entityType, mockStream, clientCloseChan)
-	incomingChan <- dataEvent
+	inboundChan <- dataEvent
 	time.Sleep(time.Millisecond * 100) // wait for the event to be processed
 	subscriptionManager.UnregisterSubscription(entityType, subId)
 
 	// Then
 	assert.Equal(t, nil, err, "RegisterSubscription should not return an error")
+	assert.Equal(t, model.PROCESSED, internalServerObject.Metadata.Status, "Expected Processed Status")
 }

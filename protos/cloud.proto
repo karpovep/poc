@@ -12,9 +12,7 @@ service Cloud {
 }
 
 message CloudObject {
-    string id = 1;
-    google.protobuf.Any entity = 2;
-    bool processed = 3;
+    google.protobuf.Any entity = 1;
 }
 
 enum OperationStatus {
