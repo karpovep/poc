@@ -24,7 +24,7 @@ func main() {
 	cfg := config.Init("config.yml")
 	appContext := app.NewApplicationContext()
 	utils := utilsPkg.NewUtils()
-	
+	eventBus := bus.NewEventBus()
 	incomingTopic := "incoming"
 	incomingChan := make(bus.DataChannel)
 	daemonIncomingTopic := "daemonIncomingTopic"
@@ -33,13 +33,11 @@ func main() {
 	appContext.Set("errChan", errChan)
 	appContext.Set("config", cfg)
 	appContext.Set("utils", utils)
+	appContext.Set("eventBus", eventBus)
 	appContext.Set("incomingTopic", incomingTopic)
 	appContext.Set("incomingChan", incomingChan)
 	appContext.Set("daemonIncomingTopic", daemonIncomingTopic)
 	appContext.Set("daemonOutcomigTopic", daemonOutcomigTopic)
-
-	eventBus := bus.NewEventBus(appContext)
-	appContext.Set("eventBus", eventBus)
 
 	subscriptionManager := subscriptions.NewSubscriptionManager(appContext)
 	appContext.Set("subscriptionManager", subscriptionManager)

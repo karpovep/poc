@@ -1,31 +1,15 @@
 package bus
 
 import (
-	"poc/app/app_mock"
-	"poc/utils/utils_mock"
 	"testing"
 	"time"
 
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
 func Test_ShouldSendPublishedDataToAllSubscribers(t *testing.T) {
 	// Given
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-	
-	mockUtils := utils_mock.NewMockIUtils(mockCtrl)
-	mockSubId1 := "mock-sub-id-1"
-	mockSubId2 := "mock-sub-id-2"
-	gomock.InOrder(
-		mockUtils.EXPECT().GenerateUuid().Return(mockSubId1),
-		mockUtils.EXPECT().GenerateUuid().Return(mockSubId2),
-	)
-	mockAppContext := app_mock.NewMockIAppContext(mockCtrl)
-	mockAppContext.EXPECT().Get("utils").Return(mockUtils)
-	
-	eb := NewEventBus(mockAppContext)
+	eb := NewEventBus()
 	topic := "test-topic"
 	ch := make(chan DataEvent)
 	event := "Some test data to be published"
@@ -46,16 +30,7 @@ func Test_ShouldSendPublishedDataToAllSubscribers(t *testing.T) {
 }
 
 func Test_ShouldSubscriberShouldNotReceiveDataAfterUnsibscribed(t *testing.T) {
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-	
-	mockUtils := utils_mock.NewMockIUtils(mockCtrl)
-	mockSubId := "mock-sub-id"
-	mockUtils.EXPECT().GenerateUuid().Return(mockSubId)
-	mockAppContext := app_mock.NewMockIAppContext(mockCtrl)
-	mockAppContext.EXPECT().Get("utils").Return(mockUtils)
-
-	eb := NewEventBus(mockAppContext)
+	eb := NewEventBus()
 	topic := "testTopic"
 	ch := make(chan DataEvent)
 	undeliverableEvent := "undeliverableEvent"
