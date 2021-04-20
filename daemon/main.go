@@ -2,7 +2,6 @@ package daemon
 
 import (
 	"log"
-	"math/rand"
 	"poc/app"
 	"poc/bus"
 	"poc/config"
@@ -48,10 +47,8 @@ func NewDaemon(appContext app.IAppContext) IDaemon {
 }
 
 func (d* Daemon) startEventHandler() {
-	clients := d.nodeClients
-
 	for event := range d.incomingChan {
-		nodeClient := clients[rand.Intn(len(clients))] //take random client
+		nodeClient := d.pickClient()
 		cloudObj := event.Data.(*cloud.CloudObject)
 		err := nodeClient.Send(cloudObj)
 
@@ -76,12 +73,13 @@ func (d* Daemon) Start() {
 }
 
 func (d* Daemon) Stop() {
+	d.EventBus.Unsubscribe(d.incomingTopic, d.incomingChan)
+
 	for _, client := range d.nodeClients {
 		err := client.Stop()
 		
 		if err != nil {
-			log.Printf("Cant start nodeClient: %v", err)
+			log.Printf("Cant stop nodeClient: %v", err)
 		}
 	}
-	d.EventBus.Unsubscribe(d.incomingTopic, d.incomingChan)
 }

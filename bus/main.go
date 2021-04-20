@@ -1,6 +1,10 @@
 package bus
 
-import "sync"
+import (
+	"poc/app"
+	"poc/utils"
+	"sync"
+)
 
 type DataEvent struct {
 	Data  interface{}
@@ -21,33 +25,36 @@ type IEventBus interface {
 
 // EventBus stores the information about subscribers interested for // a particular topic
 type EventBus struct {
-	subscribers map[string]DataChannelSlice
+	subscribers map[string]map[string]DataChannel
 	rm          sync.RWMutex
+	utils       utils.IUtils
 }
 
-func NewEventBus() IEventBus {
+func NewEventBus(appContext app.IAppContext) IEventBus {
+	utls := appContext.Get("utils").(utils.IUtils)
 	return &EventBus{
-		subscribers: map[string]DataChannelSlice{},
+		subscribers: map[string]map[string]DataChannel{},
+		utils: utls,
 	}
 }
 
 func (eb *EventBus) Subscribe(topic string, ch DataChannel) {
 	eb.rm.Lock()
-	if prev, found := eb.subscribers[topic]; found {
-		eb.subscribers[topic] = append(prev, ch)
-	} else {
-		eb.subscribers[topic] = append([]DataChannel{}, ch)
+	defer eb.rm.Unlock()
+	uuid := eb.utils.GenerateUuid()
+	if _, found := eb.subscribers[topic]; !found {
+		eb.subscribers[topic] = make(map[string]DataChannel)
 	}
-	eb.rm.Unlock()
+	eb.subscribers[topic][uuid] = ch
 }
 
 func (eb *EventBus) Unsubscribe(topic string, ch DataChannel) {
 	eb.rm.Lock()
 	defer eb.rm.Unlock()
 	if topicSubscribers, found := eb.subscribers[topic]; found {
-		for idx, s := range topicSubscribers {
+		for id, s := range topicSubscribers {
 			if s == ch {
-				eb.subscribers[topic] = append(topicSubscribers[0:idx], topicSubscribers[idx+1:]...)
+				delete(topicSubscribers, id)
 			}
 		}
 	} 
@@ -58,7 +65,12 @@ func (eb *EventBus) Publish(topic string, data interface{}) {
 	if chans, found := eb.subscribers[topic]; found {
 		// this is done because the slices refer to same array even though they are passed by value
 		// thus we are creating a new slice with our elements thus preserve locking correctly.
-		channels := append(DataChannelSlice{}, chans...)
+		// channels := append(DataChannelSlice{}, chans...)
+		channels := make([]DataChannel, 0, len(chans))
+		for _, v := range chans {
+			channels = append(channels, v)
+		}
+
 		go func(data DataEvent, dataChannelSlices DataChannelSlice) {
 			for _, ch := range dataChannelSlices {
 				ch <- data
