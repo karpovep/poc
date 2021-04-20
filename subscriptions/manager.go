@@ -129,6 +129,7 @@ func (sm *SubscriptionManager) processObject(obj *model.InternalServerObject) bo
 }
 
 func (sm *SubscriptionManager) Stop() {
+	// todo EventBus.Unsubscribe
 	sm.mx.Lock()
 	defer sm.mx.Unlock()
 	for _, subscriberInfo := range sm.subscriptions {

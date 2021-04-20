@@ -3,14 +3,16 @@ package model
 import (
 	"github.com/google/uuid"
 	cloud "poc/protos"
+	"time"
 )
 
 type (
 	ObjectStatus string
 
 	ObjectMeta struct {
-		Id     string
-		Status ObjectStatus
+		Id      string
+		Status  ObjectStatus
+		RetryIn time.Duration
 	}
 
 	InternalServerObject struct {
