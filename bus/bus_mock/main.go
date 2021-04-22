@@ -57,3 +57,15 @@ func (mr *MockIEventBusMockRecorder) Subscribe(arg0, arg1 interface{}) *gomock.C
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Subscribe", reflect.TypeOf((*MockIEventBus)(nil).Subscribe), arg0, arg1)
 }
+
+// Unsubscribe mocks base method.
+func (m *MockIEventBus) Unsubscribe(arg0 string, arg1 bus.DataChannel) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Unsubscribe", arg0, arg1)
+}
+
+// Unsubscribe indicates an expected call of Unsubscribe.
+func (mr *MockIEventBusMockRecorder) Unsubscribe(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Unsubscribe", reflect.TypeOf((*MockIEventBus)(nil).Unsubscribe), arg0, arg1)
+}

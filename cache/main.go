@@ -57,6 +57,6 @@ func (cache *Cache) ScheduleProcessing(obj *model.InternalServerObject) {
 }
 
 func (cache *Cache) Stop() {
-	// todo EventBus.Unsubscribe
+	cache.EventBus.Unsubscribe(cache.retryChannelName, cache.retryChan)
 	cache.timer.Cancel()
 }

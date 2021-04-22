@@ -50,6 +50,6 @@ func (r *RetryResolver) ProcessRetryableObject(obj *model.InternalServerObject) 
 	r.EventBus.Publish(r.retryChannelName, obj)
 }
 
-func (cache *RetryResolver) Stop() {
-	// todo EventBus.Unsubscribe
+func (r *RetryResolver) Stop() {
+	r.EventBus.Unsubscribe(r.unprocessedChannelName, r.unprocessedChan)
 }

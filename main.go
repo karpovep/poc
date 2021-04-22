@@ -8,6 +8,7 @@ import (
 	"poc/bus"
 	cache2 "poc/cache"
 	"poc/config"
+	daemon2 "poc/daemon"
 	"poc/model"
 	"poc/retry"
 	"poc/server"
@@ -34,6 +35,7 @@ func main() {
 	retryChannelName := "retry"
 	cachedChannelName := "cached"
 	inboundChan := make(bus.DataChannel)
+	outboundChan := make(bus.DataChannel)
 	unprocessedChan := make(bus.DataChannel)
 	retryChan := make(bus.DataChannel)
 
@@ -48,6 +50,7 @@ func main() {
 	appContext.Set(model.RETRY_CHANNEL_NAME, retryChannelName)
 	appContext.Set(model.CACHED_CHANNEL_NAME, cachedChannelName)
 	appContext.Set("inboundChan", inboundChan)
+	appContext.Set("outboundChan", outboundChan)
 	appContext.Set("unprocessedChan", unprocessedChan)
 	appContext.Set("retryChan", retryChan)
 
@@ -55,6 +58,8 @@ func main() {
 	appContext.Set("cacheTimer", cancellableTimer)
 	cache := cache2.NewCache(appContext)
 	appContext.Set("cache", cache)
+	daemon := daemon2.NewDaemon(appContext)
+	appContext.Set("daemon", daemon)
 
 	retryResolver := retry.NewRetryResolver(appContext)
 	appContext.Set("retryResolver", retryResolver)
