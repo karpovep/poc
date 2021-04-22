@@ -32,6 +32,7 @@ type (
 		inboundChan          bus.DataChannel
 		mx                   sync.RWMutex
 		inboundChannelName   string
+		cachedChannelName    string
 		outboundChannelName  string
 		processedChannelName string
 	}
@@ -42,6 +43,7 @@ func NewSubscriptionManager(appContext app.IAppContext) ISubscriptionManager {
 	utls := appContext.Get("utils").(utils.IUtils)
 	inboundChan := appContext.Get("inboundChan").(bus.DataChannel)
 	inboundChannelName := appContext.Get(model.INBOUND_CHANNEL_NAME).(string)
+	cachedChannelName := appContext.Get(model.CACHED_CHANNEL_NAME).(string)
 	outboundChannelName := appContext.Get(model.OUTBOUND_CHANNEL_NAME).(string)
 	processedChannelName := appContext.Get(model.PROCESSED_CHANNEL_NAME).(string)
 	sm := &SubscriptionManager{
@@ -50,11 +52,13 @@ func NewSubscriptionManager(appContext app.IAppContext) ISubscriptionManager {
 		subscriptions:        make(map[string]map[string]*Subscriber),
 		inboundChan:          inboundChan,
 		inboundChannelName:   inboundChannelName,
+		cachedChannelName:    cachedChannelName,
 		outboundChannelName:  outboundChannelName,
 		processedChannelName: processedChannelName,
 	}
 	sm.setupIncomingHandler()
 	sm.EventBus.Subscribe(inboundChannelName, inboundChan)
+	sm.EventBus.Subscribe(cachedChannelName, inboundChan)
 	return sm
 }
 
@@ -130,6 +134,7 @@ func (sm *SubscriptionManager) processObject(obj *model.InternalServerObject) bo
 
 func (sm *SubscriptionManager) Stop() {
 	sm.EventBus.Unsubscribe(sm.inboundChannelName, sm.inboundChan)
+	sm.EventBus.Unsubscribe(sm.cachedChannelName, sm.inboundChan)
 	sm.mx.Lock()
 	defer sm.mx.Unlock()
 	for _, subscriberInfo := range sm.subscriptions {

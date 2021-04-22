@@ -1,6 +1,9 @@
 package bus
 
-import "sync"
+import (
+	"fmt"
+	"sync"
+)
 
 type DataEvent struct {
 	Data  interface{}
@@ -50,10 +53,11 @@ func (eb *EventBus) Unsubscribe(topic string, ch DataChannel) {
 				eb.subscribers[topic] = append(topicSubscribers[0:idx], topicSubscribers[idx+1:]...)
 			}
 		}
-	} 
+	}
 }
 
 func (eb *EventBus) Publish(topic string, data interface{}) {
+	fmt.Println("-------->", topic)
 	eb.rm.RLock()
 	if chans, found := eb.subscribers[topic]; found {
 		// this is done because the slices refer to same array even though they are passed by value

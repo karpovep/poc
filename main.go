@@ -58,8 +58,10 @@ func main() {
 	appContext.Set("cacheTimer", cancellableTimer)
 	cache := cache2.NewCache(appContext)
 	appContext.Set("cache", cache)
+
 	daemon := daemon2.NewDaemon(appContext)
 	appContext.Set("daemon", daemon)
+	daemon.Start()
 
 	retryResolver := retry.NewRetryResolver(appContext)
 	appContext.Set("retryResolver", retryResolver)
@@ -75,6 +77,7 @@ func main() {
 		cache.Stop()
 		retryResolver.Stop()
 		subscriptionManager.Stop()
+		daemon.Stop()
 		grpcServer.Stop()
 		log.Println("App has been stopped")
 	}()

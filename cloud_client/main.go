@@ -33,6 +33,7 @@ func main() {
 	val := &cloud.TestEntity{Name: "First Cloud Client"}
 
 	go func() {
+		time.Sleep(time.Second * 10) // subscribe after 3 seconds
 		subscribeRequest := &cloud.SubscribeRequest{}
 		typeToSubscribeTo := string(val.ProtoReflect().Descriptor().FullName())
 		subscribeRequest.Type = typeToSubscribeTo

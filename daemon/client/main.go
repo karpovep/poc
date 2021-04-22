@@ -3,12 +3,12 @@ package client
 import (
 	"fmt"
 	"poc/app"
-	cloud "poc/protos"
+	"poc/model"
 )
 
 type (
 	INodeClient interface {
-		Send(obj *cloud.CloudObject) error
+		Send(obj *model.InternalServerObject) error
 		Start() error
 		Stop() error
 	}
@@ -19,10 +19,10 @@ type (
 )
 
 func NewNodeClient(address string, appContext app.IAppContext) INodeClient {
-	nc := &NodeClient {
+	nc := &NodeClient{
 		addr: address,
 	}
-	
+
 	return nc
 }
 
@@ -30,7 +30,7 @@ func (c *NodeClient) String() string {
 	return fmt.Sprintf("NodeClient [addr: %v]", c.addr)
 }
 
-func (c *NodeClient) Send(obj *cloud.CloudObject) error {
+func (c *NodeClient) Send(obj *model.InternalServerObject) error {
 	return fmt.Errorf("stub error. %v", c)
 }
 

@@ -7,7 +7,6 @@ import (
 	"poc/config"
 	"poc/daemon/client"
 	"poc/model"
-	cloud "poc/protos"
 )
 
 type (
@@ -51,11 +50,11 @@ func NewDaemon(appContext app.IAppContext) IDaemon {
 func (d *Daemon) startEventHandler() {
 	for event := range d.outboundChan {
 		nodeClient := d.pickClient()
-		cloudObj := event.Data.(*cloud.CloudObject)
-		err := nodeClient.Send(cloudObj)
+		internalServerObject := event.Data.(*model.InternalServerObject)
+		err := nodeClient.Send(internalServerObject)
 
 		if err != nil {
-			log.Printf("Can not send %v to %v", cloudObj, nodeClient)
+			log.Printf("Can not send %v to %v", internalServerObject, nodeClient)
 			//return unprocessed message back to application
 			d.EventBus.Publish(d.unprocessedChannelName, event.Data)
 		}
