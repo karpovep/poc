@@ -9,6 +9,7 @@ import (
 	"poc/app"
 	"poc/bus"
 	"poc/config"
+	"poc/model"
 	cloud "poc/protos"
 	"poc/subscriptions"
 )
@@ -26,7 +27,7 @@ type (
 		Config              *config.CloudConfig
 		errChan             chan error
 		server              *grpc.Server
-		incomingTopic       string
+		inboundChannelName  string
 	}
 )
 
@@ -35,13 +36,13 @@ func NewGrpcServer(appContext app.IAppContext) IGrpcServer {
 	subscriptionManager := appContext.Get("subscriptionManager").(subscriptions.ISubscriptionManager)
 	cfg := appContext.Get("config").(*config.CloudConfig)
 	errChan := appContext.Get("errChan").(chan error)
-	incomingTopic := appContext.Get("incomingTopic").(string)
+	inboundChannelName := appContext.Get(model.INBOUND_CHANNEL_NAME).(string)
 	return &GrpcServer{
 		EventBus:            eventBus,
 		SubscriptionManager: subscriptionManager,
 		Config:              cfg,
 		errChan:             errChan,
-		incomingTopic:       incomingTopic,
+		inboundChannelName:  inboundChannelName,
 	}
 }
 
@@ -99,7 +100,7 @@ func (s *GrpcServer) Subscribe(stream cloud.Cloud_SubscribeServer) error {
 }
 
 func (s *GrpcServer) Commit(ctx context.Context, incomingObject *cloud.CloudObject) (*cloud.OperationResult, error) {
-	fmt.Println("incomingObject", incomingObject, incomingObject.Id, incomingObject.Processed)
-	s.EventBus.Publish(s.incomingTopic, incomingObject)
+	fmt.Println("incomingObject", incomingObject)
+	s.EventBus.Publish(s.inboundChannelName, model.NewInternalServerObject(incomingObject))
 	return &cloud.OperationResult{Status: cloud.OperationStatus_OK}, nil
 }

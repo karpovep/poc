@@ -1,10 +1,12 @@
 package subscriptions
 
 import (
-	"fmt"
+	"github.com/viney-shih/go-lock"
+	"io"
 	"log"
 	"poc/app"
 	"poc/bus"
+	"poc/model"
 	cloud "poc/protos"
 	"poc/utils"
 	"sync"
@@ -20,30 +22,39 @@ type (
 	Subscriber struct {
 		stream    cloud.Cloud_SubscribeServer
 		closeChan chan bool
+		casMut    lock.CASMutex
 	}
 
 	SubscriptionManager struct {
-		EventBus      bus.IEventBus
-		Utils         utils.IUtils
-		subscriptions map[string]map[string]*Subscriber //[objectType][subscriptionId]*Subscriber
-		incomingChan  bus.DataChannel
-		mx            sync.RWMutex
+		EventBus             bus.IEventBus
+		Utils                utils.IUtils
+		subscriptions        map[string]map[string]*Subscriber //[objectType][subscriptionId]*Subscriber
+		inboundChan          bus.DataChannel
+		mx                   sync.RWMutex
+		inboundChannelName   string
+		outboundChannelName  string
+		processedChannelName string
 	}
 )
 
 func NewSubscriptionManager(appContext app.IAppContext) ISubscriptionManager {
 	eventBus := appContext.Get("eventBus").(bus.IEventBus)
 	utls := appContext.Get("utils").(utils.IUtils)
-	incomingChan := appContext.Get("incomingChan").(bus.DataChannel)
-	incomingTopic := appContext.Get("incomingTopic").(string)
+	inboundChan := appContext.Get("inboundChan").(bus.DataChannel)
+	inboundChannelName := appContext.Get(model.INBOUND_CHANNEL_NAME).(string)
+	outboundChannelName := appContext.Get(model.OUTBOUND_CHANNEL_NAME).(string)
+	processedChannelName := appContext.Get(model.PROCESSED_CHANNEL_NAME).(string)
 	sm := &SubscriptionManager{
-		EventBus:      eventBus,
-		Utils:         utls,
-		subscriptions: make(map[string]map[string]*Subscriber),
-		incomingChan:  incomingChan,
+		EventBus:             eventBus,
+		Utils:                utls,
+		subscriptions:        make(map[string]map[string]*Subscriber),
+		inboundChan:          inboundChan,
+		inboundChannelName:   inboundChannelName,
+		outboundChannelName:  outboundChannelName,
+		processedChannelName: processedChannelName,
 	}
 	sm.setupIncomingHandler()
-	sm.EventBus.Subscribe(incomingTopic, incomingChan)
+	sm.EventBus.Subscribe(inboundChannelName, inboundChan)
 	return sm
 }
 
@@ -54,7 +65,7 @@ func (sm *SubscriptionManager) RegisterSubscription(objectType string, stream cl
 		sm.subscriptions[objectType] = make(map[string]*Subscriber)
 	}
 	subId := sm.Utils.GenerateUuid()
-	sm.subscriptions[objectType][subId] = &Subscriber{stream: stream, closeChan: closeCh}
+	sm.subscriptions[objectType][subId] = &Subscriber{stream: stream, closeChan: closeCh, casMut: lock.NewCASMutex()}
 	log.Println("Subscription registered", subId)
 	return subId, nil
 }
@@ -71,27 +82,54 @@ func (sm *SubscriptionManager) UnregisterSubscription(objectType string, subId s
 }
 
 func (sm *SubscriptionManager) setupIncomingHandler() {
-	// todo implement me
 	go func() {
-		for evnt := range sm.incomingChan {
-			//todo go over subscriptions by type, lock subscriber, send object via stream and wait for the response from the stream
-			//todo if there is no specific subscription or subscriber - publish message via eventBus for the further processing
-			fmt.Println(evnt)
-			for objType, subscriberInfo := range sm.subscriptions {
-				for subId, subscriber := range subscriberInfo {
-					fmt.Println("info", objType, subId)
-					cloudObj := evnt.Data.(*cloud.CloudObject)
-					err := subscriber.stream.Send(cloudObj)
-					if err != nil {
-						fmt.Println("Send error:", err)
-					}
-				}
+		for evnt := range sm.inboundChan {
+			internalServerObject := evnt.Data.(*model.InternalServerObject)
+			processed := sm.processObject(internalServerObject)
+			if !processed {
+				sm.EventBus.Publish(sm.outboundChannelName, internalServerObject)
+			} else {
+				internalServerObject.Metadata.Status = model.PROCESSED
+				sm.EventBus.Publish(sm.processedChannelName, internalServerObject)
 			}
 		}
 	}()
 }
 
+func (sm *SubscriptionManager) processObject(obj *model.InternalServerObject) bool {
+	objType := obj.Object.Entity.TypeUrl
+	for subId, subscriber := range sm.subscriptions[objType] {
+		lockAcquired := subscriber.casMut.TryLock()
+		if lockAcquired {
+			defer subscriber.casMut.Unlock()
+			// send object to client for the processing
+			log.Println("sending object to subscriber:", subId)
+			err := subscriber.stream.Send(obj.Object)
+			if err != nil {
+				log.Fatal("Send error:", err)
+			}
+			// wait for the Acknowledgment from the client
+			log.Println("waiting acknowledge from subscriber:", subId)
+			encodedAck, err := subscriber.stream.Recv()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				log.Fatal("stream.Recv error", err)
+			}
+			var ack cloud.Acknowledge
+			if err := encodedAck.Entity.UnmarshalTo(&ack); err != nil {
+				log.Fatalf("Could not unmarshal Acknowledge from any field: %s", err)
+			}
+
+			return true
+		}
+	}
+	return false
+}
+
 func (sm *SubscriptionManager) Stop() {
+	sm.EventBus.Unsubscribe(sm.inboundChannelName, sm.inboundChan)
 	sm.mx.Lock()
 	defer sm.mx.Unlock()
 	for _, subscriberInfo := range sm.subscriptions {

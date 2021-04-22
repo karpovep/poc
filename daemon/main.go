@@ -6,6 +6,7 @@ import (
 	"poc/bus"
 	"poc/config"
 	"poc/daemon/client"
+	"poc/model"
 	cloud "poc/protos"
 )
 
@@ -16,29 +17,30 @@ type (
 	}
 
 	Daemon struct {
-		EventBus bus.IEventBus
-		incomingChan bus.DataChannel
-		incomingTopic string
-		outcomingTopic string
-		nodeClients []client.INodeClient
+		EventBus               bus.IEventBus
+		outboundChan           bus.DataChannel
+		outboundChannelName    string
+		unprocessedChannelName string
+		nodeClients            []client.INodeClient
 	}
 )
 
-func NewDaemon(appContext app.IAppContext) IDaemon { 
+func NewDaemon(appContext app.IAppContext) IDaemon {
 	eventBus := appContext.Get("eventBus").(bus.IEventBus)
-	incomingTopic := appContext.Get("daemonIncomingTopic").(string)
-	outcomingTopic := appContext.Get("daemonOutcomigTopic").(string)
-	config := appContext.Get("config").(*config.CloudConfig)
+	outboundChan := appContext.Get("outboundChan").(bus.DataChannel)
+	outboundChannelName := appContext.Get(model.OUTBOUND_CHANNEL_NAME).(string)
+	unprocessedChannelName := appContext.Get(model.UNPROCESSED_CHANNEL_NAME).(string)
+	cfg := appContext.Get("config").(*config.CloudConfig)
 
-	daemon := &Daemon {
-		EventBus: eventBus,
-		incomingChan: make(bus.DataChannel),
-		incomingTopic: incomingTopic,
-		outcomingTopic: outcomingTopic,
-		nodeClients: []client.INodeClient {},
+	daemon := &Daemon{
+		EventBus:               eventBus,
+		outboundChan:           outboundChan,
+		outboundChannelName:    outboundChannelName,
+		unprocessedChannelName: unprocessedChannelName,
+		nodeClients:            []client.INodeClient{},
 	}
 
-	for _, nodeConfig := range config.Server.Nodes {
+	for _, nodeConfig := range cfg.Server.Nodes {
 		daemon.nodeClients = append(daemon.nodeClients, client.NewNodeClient(nodeConfig, appContext))
 	}
 
@@ -46,38 +48,38 @@ func NewDaemon(appContext app.IAppContext) IDaemon {
 	return daemon
 }
 
-func (d* Daemon) startEventHandler() {
-	for event := range d.incomingChan {
+func (d *Daemon) startEventHandler() {
+	for event := range d.outboundChan {
 		nodeClient := d.pickClient()
 		cloudObj := event.Data.(*cloud.CloudObject)
 		err := nodeClient.Send(cloudObj)
 
 		if err != nil {
 			log.Printf("Can not send %v to %v", cloudObj, nodeClient)
-			//return unprocessed message back to application 
-			d.EventBus.Publish(d.outcomingTopic, event.Data)
+			//return unprocessed message back to application
+			d.EventBus.Publish(d.unprocessedChannelName, event.Data)
 		}
 	}
 }
 
-func (d* Daemon) Start() {
-	for _, client := range d.nodeClients {
-		err := client.Start()
-		
+func (d *Daemon) Start() {
+	for _, nodeClient := range d.nodeClients {
+		err := nodeClient.Start()
+
 		if err != nil {
 			log.Printf("Cant start nodeClient: %v", err)
 		}
 	}
-	
-	d.EventBus.Subscribe(d.incomingTopic, d.incomingChan)
+
+	d.EventBus.Subscribe(d.outboundChannelName, d.outboundChan)
 }
 
-func (d* Daemon) Stop() {
-	d.EventBus.Unsubscribe(d.incomingTopic, d.incomingChan)
+func (d *Daemon) Stop() {
+	d.EventBus.Unsubscribe(d.outboundChannelName, d.outboundChan)
 
-	for _, client := range d.nodeClients {
-		err := client.Stop()
-		
+	for _, nodeClient := range d.nodeClients {
+		err := nodeClient.Stop()
+
 		if err != nil {
 			log.Printf("Cant stop nodeClient: %v", err)
 		}
