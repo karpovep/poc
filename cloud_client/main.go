@@ -33,7 +33,7 @@ func main() {
 	val := &cloud.TestEntity{Name: "First Cloud Client"}
 
 	go func() {
-		time.Sleep(time.Second * 10) // subscribe after 3 seconds
+		time.Sleep(time.Second * 5) // subscribe after 3 seconds
 		subscribeRequest := &cloud.SubscribeRequest{}
 		typeToSubscribeTo := string(val.ProtoReflect().Descriptor().FullName())
 		subscribeRequest.Type = typeToSubscribeTo
@@ -66,7 +66,14 @@ func main() {
 				log.Fatalf("Could not unmarshal TestEntity from any field: %s", err)
 			}
 
-			log.Println(ent.Name)
+			log.Println("received obj", ent.Name)
+
+			time.Sleep(time.Second * 3)
+			ack := &cloud.Acknowledge{}
+			serializedAck, _ := proto.Marshal(ack)
+			msg := &anypb.Any{TypeUrl: string(ack.ProtoReflect().Descriptor().FullName()), Value: serializedAck}
+			_ = stream.Send(&cloud.CloudObject{Entity: msg})
+			log.Println("ACK SENT - ", ent.Name)
 		}
 	}()
 

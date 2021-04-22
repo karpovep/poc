@@ -123,6 +123,7 @@ func (sm *SubscriptionManager) processObject(obj *model.InternalServerObject) bo
 			if err := encodedAck.Entity.UnmarshalTo(&ack); err != nil {
 				log.Fatalf("Could not unmarshal Acknowledge from any field: %s", err)
 			}
+			log.Println("received ACK from client")
 
 			return true
 		}
