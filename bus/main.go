@@ -1,7 +1,6 @@
 package bus
 
 import (
-	"fmt"
 	"sync"
 )
 
@@ -36,12 +35,12 @@ func NewEventBus() IEventBus {
 
 func (eb *EventBus) Subscribe(topic string, ch DataChannel) {
 	eb.rm.Lock()
+	defer eb.rm.Unlock()
 	if prev, found := eb.subscribers[topic]; found {
 		eb.subscribers[topic] = append(prev, ch)
 	} else {
 		eb.subscribers[topic] = append([]DataChannel{}, ch)
 	}
-	eb.rm.Unlock()
 }
 
 func (eb *EventBus) Unsubscribe(topic string, ch DataChannel) {
@@ -57,8 +56,8 @@ func (eb *EventBus) Unsubscribe(topic string, ch DataChannel) {
 }
 
 func (eb *EventBus) Publish(topic string, data interface{}) {
-	fmt.Println("-------->", topic)
 	eb.rm.RLock()
+	defer eb.rm.RUnlock()
 	if chans, found := eb.subscribers[topic]; found {
 		// this is done because the slices refer to same array even though they are passed by value
 		// thus we are creating a new slice with our elements thus preserve locking correctly.
@@ -69,5 +68,4 @@ func (eb *EventBus) Publish(topic string, data interface{}) {
 			}
 		}(DataEvent{Data: data, Topic: topic}, channels)
 	}
-	eb.rm.RUnlock()
 }

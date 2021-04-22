@@ -22,6 +22,7 @@ func Test_ShouldHandleObjectFromInboundChannelByPublishingItToOutboundChannelIfT
 	defer mockCtrl.Finish()
 
 	inboundChannelName := "inbound.test"
+	cachedChannelName := "cached.test"
 	outboundChannelName := "outbound.test"
 	processedChannelName := "processed.test"
 	inboundChan := make(bus.DataChannel)
@@ -41,6 +42,7 @@ func Test_ShouldHandleObjectFromInboundChannelByPublishingItToOutboundChannelIfT
 
 	mockEventBus := bus_mock.NewMockIEventBus(mockCtrl)
 	mockEventBus.EXPECT().Subscribe(inboundChannelName, inboundChan)
+	mockEventBus.EXPECT().Subscribe(cachedChannelName, inboundChan)
 	mockEventBus.EXPECT().Publish(outboundChannelName, internalServerObject)
 
 	mockUtils := utils_mock.NewMockIUtils(mockCtrl)
@@ -50,6 +52,7 @@ func Test_ShouldHandleObjectFromInboundChannelByPublishingItToOutboundChannelIfT
 	mockAppContext.EXPECT().Get("utils").Return(mockUtils)
 	mockAppContext.EXPECT().Get("inboundChan").Return(inboundChan)
 	mockAppContext.EXPECT().Get(model.INBOUND_CHANNEL_NAME).Return(inboundChannelName)
+	mockAppContext.EXPECT().Get(model.CACHED_CHANNEL_NAME).Return(cachedChannelName)
 	mockAppContext.EXPECT().Get(model.OUTBOUND_CHANNEL_NAME).Return(outboundChannelName)
 	mockAppContext.EXPECT().Get(model.PROCESSED_CHANNEL_NAME).Return(processedChannelName)
 
@@ -68,6 +71,7 @@ func Test_ShouldRegisterSubscriptionSuccessfullyAndSendObjectViaStreamAndReceive
 	defer mockCtrl.Finish()
 
 	inboundChannelName := "inbound.test"
+	cachedChannelName := "cached.test"
 	outboundChannelName := "outbound.test"
 	processedChannelName := "processed.test"
 	inboundChan := make(bus.DataChannel)
@@ -87,6 +91,7 @@ func Test_ShouldRegisterSubscriptionSuccessfullyAndSendObjectViaStreamAndReceive
 
 	mockEventBus := bus_mock.NewMockIEventBus(mockCtrl)
 	mockEventBus.EXPECT().Subscribe(inboundChannelName, inboundChan)
+	mockEventBus.EXPECT().Subscribe(cachedChannelName, inboundChan)
 	mockEventBus.EXPECT().Publish(processedChannelName, internalServerObject)
 
 	mockUtils := utils_mock.NewMockIUtils(mockCtrl)
@@ -108,6 +113,7 @@ func Test_ShouldRegisterSubscriptionSuccessfullyAndSendObjectViaStreamAndReceive
 	mockAppContext.EXPECT().Get("utils").Return(mockUtils)
 	mockAppContext.EXPECT().Get("inboundChan").Return(inboundChan)
 	mockAppContext.EXPECT().Get(model.INBOUND_CHANNEL_NAME).Return(inboundChannelName)
+	mockAppContext.EXPECT().Get(model.CACHED_CHANNEL_NAME).Return(cachedChannelName)
 	mockAppContext.EXPECT().Get(model.OUTBOUND_CHANNEL_NAME).Return(outboundChannelName)
 	mockAppContext.EXPECT().Get(model.PROCESSED_CHANNEL_NAME).Return(processedChannelName)
 

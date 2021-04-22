@@ -56,7 +56,7 @@ func NewSubscriptionManager(appContext app.IAppContext) ISubscriptionManager {
 		outboundChannelName:  outboundChannelName,
 		processedChannelName: processedChannelName,
 	}
-	sm.setupIncomingHandler()
+	go sm.setupIncomingHandler()
 	sm.EventBus.Subscribe(inboundChannelName, inboundChan)
 	sm.EventBus.Subscribe(cachedChannelName, inboundChan)
 	return sm
@@ -86,18 +86,16 @@ func (sm *SubscriptionManager) UnregisterSubscription(objectType string, subId s
 }
 
 func (sm *SubscriptionManager) setupIncomingHandler() {
-	go func() {
-		for evnt := range sm.inboundChan {
-			internalServerObject := evnt.Data.(*model.InternalServerObject)
-			processed := sm.processObject(internalServerObject)
-			if !processed {
-				sm.EventBus.Publish(sm.outboundChannelName, internalServerObject)
-			} else {
-				internalServerObject.Metadata.Status = model.PROCESSED
-				sm.EventBus.Publish(sm.processedChannelName, internalServerObject)
-			}
+	for evnt := range sm.inboundChan {
+		internalServerObject := evnt.Data.(*model.InternalServerObject)
+		processed := sm.processObject(internalServerObject)
+		if !processed {
+			sm.EventBus.Publish(sm.outboundChannelName, internalServerObject)
+		} else {
+			internalServerObject.Metadata.Status = model.PROCESSED
+			sm.EventBus.Publish(sm.processedChannelName, internalServerObject)
 		}
-	}()
+	}
 }
 
 func (sm *SubscriptionManager) processObject(obj *model.InternalServerObject) bool {
