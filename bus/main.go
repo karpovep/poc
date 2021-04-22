@@ -15,6 +15,7 @@ type DataChannelSlice []DataChannel
 
 type IEventBus interface {
 	Subscribe(topic string, ch DataChannel)
+	Unsubscribe(topic string, ch DataChannel)
 	Publish(topic string, data interface{})
 }
 
@@ -38,6 +39,18 @@ func (eb *EventBus) Subscribe(topic string, ch DataChannel) {
 		eb.subscribers[topic] = append([]DataChannel{}, ch)
 	}
 	eb.rm.Unlock()
+}
+
+func (eb *EventBus) Unsubscribe(topic string, ch DataChannel) {
+	eb.rm.Lock()
+	defer eb.rm.Unlock()
+	if topicSubscribers, found := eb.subscribers[topic]; found {
+		for idx, s := range topicSubscribers {
+			if s == ch {
+				eb.subscribers[topic] = append(topicSubscribers[0:idx], topicSubscribers[idx+1:]...)
+			}
+		}
+	} 
 }
 
 func (eb *EventBus) Publish(topic string, data interface{}) {

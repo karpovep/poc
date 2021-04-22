@@ -1,8 +1,10 @@
 package bus
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_ShouldSendPublishedDataToAllSubscribers(t *testing.T) {
@@ -23,9 +25,26 @@ func Test_ShouldSendPublishedDataToAllSubscribers(t *testing.T) {
 
 	// Then
 	for i := 0; i < subscribesCount; i++ {
-		select {
-		case receivedEvent := <-ch:
-			assert.Equal(t, event, receivedEvent.Data, "receivedEvent should be equal to the sent one")
-		}
+		assert.Equal(t, event, (<-ch).Data, "receivedEvent should be equal to the sent one")
 	}
+}
+
+func Test_ShouldSubscriberShouldNotReceiveDataAfterUnsibscribed(t *testing.T) {
+	eb := NewEventBus()
+	topic := "testTopic"
+	ch := make(chan DataEvent)
+	undeliverableEvent := "undeliverableEvent"
+
+	eb.Subscribe(topic, ch)
+	eb.Unsubscribe(topic, ch)
+	eb.Publish(topic, undeliverableEvent)
+	go func() {
+		time.Sleep(50 * time.Millisecond)
+		close(ch)
+	}()
+
+	e, ok := <-ch
+
+	assert.False(t, ok, "Channel shoud be closed")
+	assert.True(t, e == DataEvent{}, "Channel shoud be empty")
 }
