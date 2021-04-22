@@ -1,8 +1,7 @@
-package client
+package nodes
 
 import (
 	"fmt"
-	"poc/app"
 	"poc/model"
 )
 
@@ -18,7 +17,7 @@ type (
 	}
 )
 
-func NewNodeClient(address string, appContext app.IAppContext) INodeClient {
+func NewNodeClient(address string) INodeClient {
 	nc := &NodeClient{
 		addr: address,
 	}

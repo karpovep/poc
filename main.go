@@ -10,6 +10,7 @@ import (
 	"poc/config"
 	daemon2 "poc/daemon"
 	"poc/model"
+	"poc/nodes"
 	"poc/retry"
 	"poc/server"
 	"poc/subscriptions"
@@ -59,6 +60,9 @@ func main() {
 	cache := cache2.NewCache(appContext)
 	appContext.Set("cache", cache)
 
+	nodeClientProvider := nodes.NewNodeClientProvider(appContext)
+	appContext.Set("nodeClientProvider", nodeClientProvider)
+	nodeClientProvider.Start()
 	daemon := daemon2.NewDaemon(appContext)
 	appContext.Set("daemon", daemon)
 	daemon.Start()
@@ -78,6 +82,7 @@ func main() {
 		retryResolver.Stop()
 		subscriptionManager.Stop()
 		daemon.Stop()
+		nodeClientProvider.Stop()
 		grpcServer.Stop()
 		log.Println("App has been stopped")
 	}()

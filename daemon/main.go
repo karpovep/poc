@@ -4,9 +4,8 @@ import (
 	"log"
 	"poc/app"
 	"poc/bus"
-	"poc/config"
-	"poc/daemon/client"
 	"poc/model"
+	"poc/nodes"
 )
 
 type (
@@ -20,7 +19,7 @@ type (
 		outboundChan           bus.DataChannel
 		outboundChannelName    string
 		unprocessedChannelName string
-		nodeClients            []client.INodeClient
+		nodeClientProvider     nodes.INodeClientProvider
 	}
 )
 
@@ -29,18 +28,14 @@ func NewDaemon(appContext app.IAppContext) IDaemon {
 	outboundChan := appContext.Get("outboundChan").(bus.DataChannel)
 	outboundChannelName := appContext.Get(model.OUTBOUND_CHANNEL_NAME).(string)
 	unprocessedChannelName := appContext.Get(model.UNPROCESSED_CHANNEL_NAME).(string)
-	cfg := appContext.Get("config").(*config.CloudConfig)
+	nodeClientProvider := appContext.Get("nodeClientProvider").(nodes.INodeClientProvider)
 
 	daemon := &Daemon{
 		EventBus:               eventBus,
 		outboundChan:           outboundChan,
 		outboundChannelName:    outboundChannelName,
 		unprocessedChannelName: unprocessedChannelName,
-		nodeClients:            []client.INodeClient{},
-	}
-
-	for _, nodeConfig := range cfg.Server.Nodes {
-		daemon.nodeClients = append(daemon.nodeClients, client.NewNodeClient(nodeConfig, appContext))
+		nodeClientProvider:     nodeClientProvider,
 	}
 
 	go daemon.startEventHandler()
@@ -49,7 +44,7 @@ func NewDaemon(appContext app.IAppContext) IDaemon {
 
 func (d *Daemon) startEventHandler() {
 	for event := range d.outboundChan {
-		nodeClient := d.pickClient()
+		nodeClient := d.nodeClientProvider.PickClient()
 		internalServerObject := event.Data.(*model.InternalServerObject)
 		err := nodeClient.Send(internalServerObject)
 
@@ -62,25 +57,9 @@ func (d *Daemon) startEventHandler() {
 }
 
 func (d *Daemon) Start() {
-	for _, nodeClient := range d.nodeClients {
-		err := nodeClient.Start()
-
-		if err != nil {
-			log.Printf("Cant start nodeClient: %v", err)
-		}
-	}
-
 	d.EventBus.Subscribe(d.outboundChannelName, d.outboundChan)
 }
 
 func (d *Daemon) Stop() {
 	d.EventBus.Unsubscribe(d.outboundChannelName, d.outboundChan)
-
-	for _, nodeClient := range d.nodeClients {
-		err := nodeClient.Stop()
-
-		if err != nil {
-			log.Printf("Cant stop nodeClient: %v", err)
-		}
-	}
 }
