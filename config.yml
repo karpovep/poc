@@ -4,6 +4,9 @@ server:
     - localhost:50053
     - localhost:50054
     - localhost:50055
-
+cassandra:
+  hosts:
+    - localhost
+  keyspace: test
 client:
   serverAddress: localhost:50052

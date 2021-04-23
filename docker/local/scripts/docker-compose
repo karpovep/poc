@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+. "$(dirname $0)/include/variables"
+
+docker-compose -f $(dirname $0)/../docker-compose.yml -p $CONTAINERS_PREFIX $*

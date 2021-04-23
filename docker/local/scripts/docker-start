@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+$(dirname $0)/docker-stop
+$(dirname $0)/docker-compose build
+$(dirname $0)/docker-compose up -d

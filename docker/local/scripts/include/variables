@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+CONTAINERS_PREFIX=dpc
+CONTAINER=$(docker ps -f NAME=${CONTAINERS_PREFIX} -q)
