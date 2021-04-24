@@ -11,6 +11,7 @@ import (
 	daemon2 "poc/daemon"
 	"poc/model"
 	"poc/nodes"
+	"poc/repository"
 	"poc/retry"
 	"poc/server"
 	"poc/subscriptions"
@@ -36,6 +37,7 @@ func main() {
 	retryChannelName := "retry"
 	cachedChannelName := "cached"
 	inboundChan := make(bus.DataChannel)
+	inboundRepoChan := make(bus.DataChannel)
 	outboundChan := make(bus.DataChannel)
 	unprocessedChan := make(bus.DataChannel)
 	retryChan := make(bus.DataChannel)
@@ -51,6 +53,7 @@ func main() {
 	appContext.Set(model.RETRY_CHANNEL_NAME, retryChannelName)
 	appContext.Set(model.CACHED_CHANNEL_NAME, cachedChannelName)
 	appContext.Set("inboundChan", inboundChan)
+	appContext.Set("inboundRepoChan", inboundRepoChan)
 	appContext.Set("outboundChan", outboundChan)
 	appContext.Set("unprocessedChan", unprocessedChan)
 	appContext.Set("retryChan", retryChan)
@@ -73,6 +76,10 @@ func main() {
 	subscriptionManager := subscriptions.NewSubscriptionManager(appContext)
 	appContext.Set("subscriptionManager", subscriptionManager)
 
+	cassandraRepository := repository.NewCassandraRepository(appContext)
+	appContext.Set("cassandraRepository", cassandraRepository)
+	cassandraRepository.Start()
+
 	grpcServer := server.NewGrpcServer(appContext)
 
 	defer func() {
@@ -83,6 +90,7 @@ func main() {
 		subscriptionManager.Stop()
 		daemon.Stop()
 		nodeClientProvider.Stop()
+		//cassandraRepository.Stop()
 		grpcServer.Stop()
 		log.Println("App has been stopped")
 	}()

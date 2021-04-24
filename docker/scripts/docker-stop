@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+$(dirname $0)/docker-compose kill
+yes | $(dirname $0)/docker-compose rm

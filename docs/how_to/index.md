@@ -2,12 +2,22 @@
 
 * To compile protoc
 ```$bash
-scripts/compile_protos.sh
+make compile_protos
 ```
 
 * To run cloud server
 ```$bash
-go run main.go
+make run
+```
+
+* To build
+```$bash
+make build
+```
+
+* To clean-up
+```$bash
+make clean
 ```
 
 * To run cloud client
@@ -22,15 +32,25 @@ GO111MODULE=on go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.26.
 
 * To run linter
 ```$bash
-golangci-lint run
+make lint
 ```
 
 * To generate mocks
 ```$bash
-scripts/mock_gen.sh
+make mock_gen.sh
 ```
 
 * To run tests
 ```$bash
-scripts/run_tests.sh
+make test
+```
+
+* To start dockers
+```$bash
+make docker-start
+```
+
+* To stop dockers
+```$bash
+make docker-stop
 ```

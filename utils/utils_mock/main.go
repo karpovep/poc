@@ -33,6 +33,20 @@ func (m *MockIUtils) EXPECT() *MockIUtilsMockRecorder {
 	return m.recorder
 }
 
+// GenerateTimeUuid mocks base method.
+func (m *MockIUtils) GenerateTimeUuid() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GenerateTimeUuid")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GenerateTimeUuid indicates an expected call of GenerateTimeUuid.
+func (mr *MockIUtilsMockRecorder) GenerateTimeUuid() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateTimeUuid", reflect.TypeOf((*MockIUtils)(nil).GenerateTimeUuid))
+}
+
 // GenerateUuid mocks base method.
 func (m *MockIUtils) GenerateUuid() string {
 	m.ctrl.T.Helper()
