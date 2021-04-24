@@ -1,3 +1,3 @@
 .idea
 
-docker/local/cassandra/cassandra_data
+docker/cassandra/cassandra_data

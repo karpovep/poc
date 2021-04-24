@@ -31,7 +31,7 @@ compile_protos:
         protos/cloud.proto
 
 docker-start:
-	./docker/local/scripts/docker-start
+	./docker/scripts/docker-start
 
 docker-stop:
-	./docker/local/scripts/docker-stop
+	./docker/scripts/docker-stop

@@ -3,8 +3,8 @@ version: '3.4'
 services:
   app:
     build:
-      context: ../..
-      dockerfile: ./docker/local/app/Dockerfile
+      context: ..
+      dockerfile: app/Dockerfile
     hostname: dpc_app
     environment:
       NODE_ENV: dev
