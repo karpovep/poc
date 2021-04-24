@@ -12,7 +12,7 @@ services:
       - ../../:/app
     working_dir: /app
     ports:
-      - 50052:50052
+      - 50051:50051
     command: tail -F anything
     privileged: true
     depends_on:
@@ -29,3 +29,12 @@ services:
     restart: always
     volumes:
       - ./cassandra/cassandra_data:/var/lib/cassandra
+
+  cassandra-load-keyspace:
+    image: cassandra:3
+    container_name: cassandra-load-keyspace
+    depends_on:
+      - cassandra
+    volumes:
+      - ./cassandra/schema.cql:/schema.cql
+    command: /bin/bash -c "sleep 30 && echo loading cassandra keyspace && cqlsh cassandra -f ./schema.cql"

@@ -2,29 +2,28 @@ package repository
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/gocql/gocql"
+	"google.golang.org/protobuf/types/known/anypb"
+	"log"
 	"poc/app"
-	"poc/bus"
-	"poc/config"
+	"poc/model"
+	cloud "poc/protos"
 	"text/template"
 )
 
 type (
 	ICassandraRepository interface {
 		IRepository
-		CreateKeyspace(params *CreateKeyspaceQueryParams) error
 		CreateTable(params *CreateTableQueryParams) error
+		SaveInternalServerObject(obj *model.InternalServerObject) error
+		FindByTypeAndId(objType string, id string) (*model.InternalServerObject, error)
 	}
 
 	CassandraRepository struct {
 		*Repository
 		cluster *gocql.ClusterConfig
-	}
-
-	CreateKeyspaceQueryParams struct {
-		Keyspace          string
-		ReplicationClass  string
-		ReplicationFactor int
+		session *gocql.Session
 	}
 
 	CreateTableQueryParams struct {
@@ -38,10 +37,6 @@ type (
 	}
 )
 
-const createKeyspaceQueryTemplate = "" +
-	"create keyspace if not exists {{ .Keyspace }} " +
-	"with replication = { 'class' : '{{ .ReplicationClass }}', 'replication_factor' : {{ .ReplicationFactor }} };"
-
 const createTableQueryTemplate = "" +
 	"create table if not exists {{ .Keyspace }}.{{ .Table }} " +
 	"(" +
@@ -51,28 +46,12 @@ const createTableQueryTemplate = "" +
 	"PRIMARY KEY ({{ .PrimaryKey }})" +
 	");"
 
-func NewCassandraRepository(appContext app.IAppContext) ICassandraRepository {
-	eventBus := appContext.Get("eventBus").(bus.IEventBus)
-	cfg := appContext.Get("config").(*config.CloudConfig)
-	return &CassandraRepository{
-		Repository: &Repository{
-			EventBus: eventBus,
-			config:   cfg,
-		},
-	}
-}
+const internalServerObjectTable = "internal_server_object"
 
-func (r *CassandraRepository) CreateKeyspace(params *CreateKeyspaceQueryParams) error {
-	tmlpt, err := template.New("createKeyspaceQueryTemplate").Parse(createKeyspaceQueryTemplate)
-	if err != nil {
-		return err
+func NewCassandraRepository(appContext app.IAppContext) ICassandraRepository {
+	return &CassandraRepository{
+		Repository: NewRepository(appContext),
 	}
-	createKeyspaceQuery := &bytes.Buffer{}
-	err = tmlpt.Execute(createKeyspaceQuery, params)
-	if err != nil {
-		return err
-	}
-	return r.executeQuery(createKeyspaceQuery.String())
 }
 
 func (r *CassandraRepository) CreateTable(params *CreateTableQueryParams) error {
@@ -85,24 +64,104 @@ func (r *CassandraRepository) CreateTable(params *CreateTableQueryParams) error 
 	if err != nil {
 		return err
 	}
-	return r.executeQuery(createTableQuery.String())
+	return r.session.Query(createTableQuery.String()).Exec()
 }
 
-func (r *CassandraRepository) executeQuery(query string) error {
+func (r *CassandraRepository) SaveInternalServerObject(iso *model.InternalServerObject) error {
 	session, err := r.cluster.CreateSession()
 	if err != nil {
 		return err
 	}
 	defer session.Close()
-	return session.Query(query).Exec()
+
+	partitionKey, err := r.extractPartitionKey(iso.Object.Id)
+	if err != nil {
+		return err
+	}
+	if err := session.Query(`INSERT INTO internal_server_object (partition_key, type, id, cloud_object) VALUES (?, ?, ?, ?)`,
+		partitionKey, iso.Object.Entity.TypeUrl, iso.Object.Id, iso.Object.Entity.Value).Exec(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *CassandraRepository) FindByTypeAndId(objType string, id string) (*model.InternalServerObject, error) {
+	partitionKey, err := r.extractPartitionKey(id)
+	if err != nil {
+		return nil, err
+	}
+
+	var cloudObject []byte
+	if err := r.session.Query(`SELECT cloud_object FROM internal_server_object WHERE partition_key = ? AND type = ? AND id = ?`,
+		partitionKey, objType, id).Consistency(gocql.One).Scan(&cloudObject); err != nil {
+		log.Fatal(err)
+	}
+
+	return model.NewInternalServerObject(&cloud.CloudObject{
+		Id:     id,
+		Entity: &anypb.Any{TypeUrl: objType, Value: cloudObject},
+	}), nil
+}
+
+func (r *CassandraRepository) extractPartitionKey(id string) (string, error) {
+	timeuuid, err := gocql.ParseUUID(id)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%d-%02d", timeuuid.Time().Year(), timeuuid.Time().Month()), nil
 }
 
 func (r *CassandraRepository) Start() {
 	r.cluster = gocql.NewCluster(r.config.Cassandra.Hosts...)
 	r.cluster.Keyspace = r.config.Cassandra.Keyspace
 	r.cluster.Consistency = gocql.Quorum
+
+	if r.cluster.Keyspace == "" {
+		log.Fatalln("cassandra keyspace config is missing")
+		return
+	}
+
+	session, err := r.cluster.CreateSession()
+	if err != nil {
+		log.Fatalln("cannot create connection session to cassandra cluster", err)
+		return
+	}
+	r.session = session
+
+	// ensure table is created
+	err = r.CreateTable(&CreateTableQueryParams{
+		Keyspace:   r.cluster.Keyspace,
+		Table:      internalServerObjectTable,
+		PrimaryKey: "(partition_key), type, id",
+		Fields: []struct {
+			Name string
+			Type string
+		}{
+			{"partition_key", "VARCHAR"},
+			{"type", "VARCHAR"},
+			{"id", "TIMEUUID"},
+			{"cloud_object", "BLOB"},
+		},
+	})
+	if err != nil {
+		log.Fatalln("cannot create table:", internalServerObjectTable, err)
+	}
+	go r.setupIncomingHandler()
+	r.EventBus.Subscribe(r.inboundChannelName, r.inboundRepoChan)
 }
 
 func (r *CassandraRepository) Stop() {
-	panic("implement me")
+	r.EventBus.Unsubscribe(r.inboundChannelName, r.inboundRepoChan)
+	r.session.Close()
+}
+
+func (r *CassandraRepository) setupIncomingHandler() {
+	for evnt := range r.inboundRepoChan {
+		internalServerObject := evnt.Data.(*model.InternalServerObject)
+		err := r.SaveInternalServerObject(internalServerObject)
+		//todo handle errors
+		if err != nil {
+			log.Fatalln("SaveInternalServerObject error", err)
+		}
+	}
 }

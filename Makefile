@@ -4,8 +4,7 @@ build:
 	go build -o ${BINARY_NAME} main.go
 
 run:
-	go build -o ${BINARY_NAME} main.go
-	./${BINARY_NAME}
+	go run main.go
 
 clean:
 	go clean
@@ -35,4 +34,4 @@ docker-start:
 	./docker/local/scripts/docker-start
 
 docker-stop:
-	./docker/local/scripts/docker-start
+	./docker/local/scripts/docker-stop

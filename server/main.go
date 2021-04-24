@@ -12,6 +12,7 @@ import (
 	"poc/model"
 	cloud "poc/protos"
 	"poc/subscriptions"
+	"poc/utils"
 )
 
 type (
@@ -25,6 +26,7 @@ type (
 		EventBus            bus.IEventBus
 		SubscriptionManager subscriptions.ISubscriptionManager
 		Config              *config.CloudConfig
+		Utils               utils.IUtils
 		errChan             chan error
 		server              *grpc.Server
 		inboundChannelName  string
@@ -34,6 +36,7 @@ type (
 func NewGrpcServer(appContext app.IAppContext) IGrpcServer {
 	eventBus := appContext.Get("eventBus").(bus.IEventBus)
 	subscriptionManager := appContext.Get("subscriptionManager").(subscriptions.ISubscriptionManager)
+	utls := appContext.Get("utils").(utils.IUtils)
 	cfg := appContext.Get("config").(*config.CloudConfig)
 	errChan := appContext.Get("errChan").(chan error)
 	inboundChannelName := appContext.Get(model.INBOUND_CHANNEL_NAME).(string)
@@ -41,6 +44,7 @@ func NewGrpcServer(appContext app.IAppContext) IGrpcServer {
 		EventBus:            eventBus,
 		SubscriptionManager: subscriptionManager,
 		Config:              cfg,
+		Utils:               utls,
 		errChan:             errChan,
 		inboundChannelName:  inboundChannelName,
 	}
@@ -101,6 +105,9 @@ func (s *GrpcServer) Subscribe(stream cloud.Cloud_SubscribeServer) error {
 
 func (s *GrpcServer) Commit(ctx context.Context, incomingObject *cloud.CloudObject) (*cloud.OperationResult, error) {
 	fmt.Println("incomingObject", incomingObject)
+	if incomingObject.Id == "" {
+		incomingObject.Id = s.Utils.GenerateTimeUuid()
+	}
 	s.EventBus.Publish(s.inboundChannelName, model.NewInternalServerObject(incomingObject))
 	return &cloud.OperationResult{Status: cloud.OperationStatus_OK}, nil
 }

@@ -7,6 +7,6 @@ server:
 cassandra:
   hosts:
     - localhost
-  keyspace: test
+  keyspace: cloud
 client:
   serverAddress: localhost:50052
