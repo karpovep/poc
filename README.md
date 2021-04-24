@@ -24,7 +24,7 @@ The aim of this project is to build easy-to-scale distributed processing cloud w
 Each Node should implement the following functionality:
 * accept configuration to be able to connect to other Nodes
 * serve HTTP/2 to accept incoming connections from other Nodes
-* accept connections from the clients (same server VS another one - ? TBD)
+* accept connections from the clients - separate server
 * subscriptions from clients to objects by type
 * daemon functionality for monitoring in-memory objects and transferring objects between instances
 * repository - to save data to
@@ -44,7 +44,7 @@ Basically, the following test case should pass:
 3. Define 2 simple type of objects (references to each other are not required)
 4. Implement simple client which can connect to a Node and subscribe for receiving objects of 1 pre-defined type
 5. Run 2 clients: each client connects to different Node
-6. Each client should generate an object of another pre-defined type and push it into the program
+6. Each client should generate an object of another pre-defined type and push it into the cloud
 
 #### Expected behaviour
 * PoC accepts objects of 2 types;
@@ -63,8 +63,8 @@ Basically, the following test case should pass:
 
 ### Open Questions
 - :large_orange_diamond: internal objects schemas
+- :large_orange_diamond: objects state management
 - :x: allow to define custom types to clients
-- :x: objects state management
 - :x: example to be implemented for the demo purpose
 
 ### Roadmap
@@ -82,3 +82,4 @@ Basically, the following test case should pass:
 - [Basic Architecture View](https://drive.google.com/file/d/1ukPn3U78vHxhr7BJNcWFetokQS_1pMXa/view)
 - [Server Node Components](https://drive.google.com/file/d/1JG-yAHjmxeNS6PgxwnjE62t4KoFMdgH5/view)
 - [Basic Sequence Diagram](https://drive.google.com/file/d/1AGZXQFtNuUlxJsOziDhPfv7i8YBmQfeR/view)
+- [Data Structures](https://drive.google.com/file/d/1juhmjO4wt3YYu_EDF68281vRpm4O9MzJ/view)
