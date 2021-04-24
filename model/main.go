@@ -2,7 +2,7 @@ package model
 
 import (
 	"github.com/google/uuid"
-	cloud "poc/protos"
+	"poc/protos/cloud"
 	"time"
 )
 

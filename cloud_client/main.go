@@ -8,7 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"poc/config"
-	cloud "poc/protos"
+	"poc/protos/cloud"
 	"syscall"
 	"time"
 

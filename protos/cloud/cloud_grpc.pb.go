@@ -32,7 +32,7 @@ func NewCloudClient(cc grpc.ClientConnInterface) CloudClient {
 
 func (c *cloudClient) Commit(ctx context.Context, in *CloudObject, opts ...grpc.CallOption) (*OperationResult, error) {
 	out := new(OperationResult)
-	err := c.cc.Invoke(ctx, "/protos.Cloud/Commit", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/protos.cloud.Cloud/Commit", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +40,7 @@ func (c *cloudClient) Commit(ctx context.Context, in *CloudObject, opts ...grpc.
 }
 
 func (c *cloudClient) Subscribe(ctx context.Context, opts ...grpc.CallOption) (Cloud_SubscribeClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Cloud_ServiceDesc.Streams[0], "/protos.Cloud/Subscribe", opts...)
+	stream, err := c.cc.NewStream(ctx, &Cloud_ServiceDesc.Streams[0], "/protos.cloud.Cloud/Subscribe", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +112,7 @@ func _Cloud_Commit_Handler(srv interface{}, ctx context.Context, dec func(interf
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/protos.Cloud/Commit",
+		FullMethod: "/protos.cloud.Cloud/Commit",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(CloudServer).Commit(ctx, req.(*CloudObject))
@@ -150,7 +150,7 @@ func (x *cloudSubscribeServer) Recv() (*CloudObject, error) {
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Cloud_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "protos.Cloud",
+	ServiceName: "protos.cloud.Cloud",
 	HandlerType: (*CloudServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -166,5 +166,5 @@ var Cloud_ServiceDesc = grpc.ServiceDesc{
 			ClientStreams: true,
 		},
 	},
-	Metadata: "protos/cloud.proto",
+	Metadata: "protos/cloud/cloud.proto",
 }

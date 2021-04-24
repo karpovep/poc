@@ -8,7 +8,7 @@ import (
 	"log"
 	"poc/app"
 	"poc/model"
-	cloud "poc/protos"
+	"poc/protos/cloud"
 	"text/template"
 )
 

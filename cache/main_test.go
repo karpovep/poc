@@ -6,7 +6,7 @@ import (
 	"poc/bus"
 	"poc/bus/bus_mock"
 	"poc/model"
-	cloud "poc/protos"
+	"poc/protos/cloud"
 	"poc/utils/utils_mock"
 	"testing"
 	"time"

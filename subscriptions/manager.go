@@ -7,7 +7,7 @@ import (
 	"poc/app"
 	"poc/bus"
 	"poc/model"
-	cloud "poc/protos"
+	"poc/protos/cloud"
 	"poc/utils"
 	"sync"
 )

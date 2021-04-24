@@ -10,7 +10,7 @@ import (
 	"poc/bus"
 	"poc/config"
 	"poc/model"
-	cloud "poc/protos"
+	"poc/protos/cloud"
 	"poc/subscriptions"
 	"poc/utils"
 )

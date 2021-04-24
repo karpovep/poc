@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+option go_package = "protos/dpc/nodes";
+import "google/protobuf/any.proto";
+
+package protos.dpc.nodes;
+
+service Node {
+    rpc Send (InternalServerObject) returns (Acknowledge) {}
+}
+
+message InternalServerObject {
+    string id = 1;
+    google.protobuf.Any entity = 2;
+}
+
+message Acknowledge {
+}

@@ -11,7 +11,7 @@ import (
 	"poc/bus/bus_mock"
 	"poc/config"
 	"poc/model"
-	cloud "poc/protos"
+	"poc/protos/cloud"
 	"testing"
 )
 
