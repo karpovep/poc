@@ -27,12 +27,13 @@ Each Node should implement the following functionality:
 * accept connections from the clients (same server VS another one - ? TBD)
 * subscriptions from clients to objects by type
 * daemon functionality for monitoring in-memory objects and transferring objects between instances
+* repository - to save data to
 
 
 ### Technologies
-- Programming language - GO Lang?
+- Programming language - GO Lang
 - HTTP/2 as a transport, grpc
-- Database(s) - TBD, not in scope of PoC (Cassandra should be considered as an option, need to check how it works with updates and transactions)
+- Database(s) - Cassandra as main storage, Postgres as an option for transactional processing - TBD
 
 
 ### Acceptance Criteria
@@ -60,20 +61,20 @@ Basically, the following test case should pass:
 
 
 ### Open Questions
-- allow to define custom types to clients
-- internal objects schemas
-- objects state management
-- example to be implemented for the demo purpose
+- :large_orange_diamond: internal objects schemas
+- :x: allow to define custom types to clients
+- :x: objects state management
+- :x: example to be implemented for the demo purpose
 
 ### Roadmap
-- Implement simplified PoC (1 server node and 1 client)
-- Implement PoC (2 nodes + 2 clients)
-- introduce data storage (store data + querying data)
-- Failover handling
-- Logging and monitoring
-- Reporting & Analytics
+- :white_check_mark: Implement simplified PoC (1 server node and 1 client)
+- :large_orange_diamond: Implement PoC (2 nodes + 2 clients)
+- :large_orange_diamond: introduce data storage (store data + querying data)
+- :x: Failover handling
+- :x: Logging and monitoring
+- :x: Reporting & Analytics
 - ...
-- Centralised cloud network
+- :x: Centralised cloud network
 
 ### Diagrams
 - [Basic Architecture View](https://drive.google.com/file/d/1ukPn3U78vHxhr7BJNcWFetokQS_1pMXa/view)
