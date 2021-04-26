@@ -7,8 +7,12 @@ import (
 
 type (
 	ServerConfig struct {
-		Port  string   `yaml:"port" env:"PORT" env-default:":50051"`
+		Port  string   `yaml:"port" env:"SERVER_PORT" env-default:":50051"`
 		Nodes []string `yaml:"nodes"`
+	}
+
+	NodeServerConfig struct {
+		Port string `yaml:"port" env:"NODE_SERVER_PORT" env-default:":40041"`
 	}
 
 	CassandraConfig struct {
@@ -21,9 +25,10 @@ type (
 	}
 
 	CloudConfig struct {
-		Server    ServerConfig
-		Client    ClientConfig
-		Cassandra CassandraConfig
+		Server     ServerConfig
+		NodeServer NodeServerConfig `yaml:"nodeServer"`
+		Client     ClientConfig
+		Cassandra  CassandraConfig
 	}
 )
 

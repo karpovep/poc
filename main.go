@@ -31,6 +31,7 @@ func main() {
 	utils := utilsPkg.NewUtils()
 	eventBus := bus.NewEventBus()
 	inboundChannelName := "inbound"
+	transferChannelName := "transfer"
 	outboundChannelName := "outbound"
 	processedChannelName := "processed"
 	unprocessedChannelName := "unprocessed"
@@ -47,6 +48,7 @@ func main() {
 	appContext.Set("utils", utils)
 	appContext.Set("eventBus", eventBus)
 	appContext.Set(model.INBOUND_CHANNEL_NAME, inboundChannelName)
+	appContext.Set(model.TRANSFER_CHANNEL_NAME, transferChannelName)
 	appContext.Set(model.OUTBOUND_CHANNEL_NAME, outboundChannelName)
 	appContext.Set(model.PROCESSED_CHANNEL_NAME, processedChannelName)
 	appContext.Set(model.UNPROCESSED_CHANNEL_NAME, unprocessedChannelName)
@@ -80,11 +82,14 @@ func main() {
 	appContext.Set("cassandraRepository", cassandraRepository)
 	cassandraRepository.Start()
 
+	nodeServer := nodes.NewNodeServer(appContext)
+	nodeServer.Start()
 	grpcServer := server.NewGrpcServer(appContext)
 
 	defer func() {
 		log.Println("Stopping the app...")
 		// do graceful stop of required resources here in right order
+		nodeServer.Stop()
 		cache.Stop()
 		retryResolver.Stop()
 		subscriptionManager.Stop()

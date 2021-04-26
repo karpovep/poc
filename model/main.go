@@ -1,7 +1,7 @@
 package model
 
 import (
-	"github.com/google/uuid"
+	"github.com/gocql/gocql"
 	"poc/protos/cloud"
 	"time"
 )
@@ -22,10 +22,13 @@ type (
 )
 
 func NewInternalServerObject(cloudObj *cloud.CloudObject) *InternalServerObject {
+	if cloudObj.Id == "" {
+		//todo check cloudObj.Id for the TimeUUID validity
+		cloudObj.Id = gocql.TimeUUID().String()
+	}
 	return &InternalServerObject{
 		Object: cloudObj,
 		Metadata: &ObjectMeta{
-			Id:     uuid.New().String(),
 			Status: NEW,
 		},
 	}
@@ -33,6 +36,7 @@ func NewInternalServerObject(cloudObj *cloud.CloudObject) *InternalServerObject 
 
 const (
 	INBOUND_CHANNEL_NAME     string = "inbound"
+	TRANSFER_CHANNEL_NAME    string = "transfer"
 	OUTBOUND_CHANNEL_NAME    string = "outbound"
 	UNPROCESSED_CHANNEL_NAME string = "unprocessed"
 	RETRY_CHANNEL_NAME       string = "retry"

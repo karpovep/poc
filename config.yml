@@ -1,9 +1,9 @@
+nodeServer:
+  port: :40042
 server:
   port: :50052
   nodes:
-    - localhost:50053
-    - localhost:50054
-    - localhost:50055
+    - localhost:40043
 cassandra:
   hosts:
     - localhost

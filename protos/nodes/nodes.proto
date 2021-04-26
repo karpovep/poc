@@ -6,7 +6,7 @@ import "google/protobuf/any.proto";
 package protos.dpc.nodes;
 
 service Node {
-    rpc Send (InternalServerObject) returns (Acknowledge) {}
+    rpc Transfer (InternalServerObject) returns (Acknowledge) {}
 }
 
 message InternalServerObject {

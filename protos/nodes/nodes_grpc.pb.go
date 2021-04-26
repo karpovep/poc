@@ -18,7 +18,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type NodeClient interface {
-	Send(ctx context.Context, in *InternalServerObject, opts ...grpc.CallOption) (*Acknowledge, error)
+	Transfer(ctx context.Context, in *InternalServerObject, opts ...grpc.CallOption) (*Acknowledge, error)
 }
 
 type nodeClient struct {
@@ -29,9 +29,9 @@ func NewNodeClient(cc grpc.ClientConnInterface) NodeClient {
 	return &nodeClient{cc}
 }
 
-func (c *nodeClient) Send(ctx context.Context, in *InternalServerObject, opts ...grpc.CallOption) (*Acknowledge, error) {
+func (c *nodeClient) Transfer(ctx context.Context, in *InternalServerObject, opts ...grpc.CallOption) (*Acknowledge, error) {
 	out := new(Acknowledge)
-	err := c.cc.Invoke(ctx, "/protos.dpc.nodes.Node/Send", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/protos.dpc.nodes.Node/Transfer", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func (c *nodeClient) Send(ctx context.Context, in *InternalServerObject, opts ..
 // All implementations must embed UnimplementedNodeServer
 // for forward compatibility
 type NodeServer interface {
-	Send(context.Context, *InternalServerObject) (*Acknowledge, error)
+	Transfer(context.Context, *InternalServerObject) (*Acknowledge, error)
 	mustEmbedUnimplementedNodeServer()
 }
 
@@ -50,8 +50,8 @@ type NodeServer interface {
 type UnimplementedNodeServer struct {
 }
 
-func (UnimplementedNodeServer) Send(context.Context, *InternalServerObject) (*Acknowledge, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Send not implemented")
+func (UnimplementedNodeServer) Transfer(context.Context, *InternalServerObject) (*Acknowledge, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Transfer not implemented")
 }
 func (UnimplementedNodeServer) mustEmbedUnimplementedNodeServer() {}
 
@@ -66,20 +66,20 @@ func RegisterNodeServer(s grpc.ServiceRegistrar, srv NodeServer) {
 	s.RegisterService(&Node_ServiceDesc, srv)
 }
 
-func _Node_Send_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Node_Transfer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(InternalServerObject)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(NodeServer).Send(ctx, in)
+		return srv.(NodeServer).Transfer(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/protos.dpc.nodes.Node/Send",
+		FullMethod: "/protos.dpc.nodes.Node/Transfer",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(NodeServer).Send(ctx, req.(*InternalServerObject))
+		return srv.(NodeServer).Transfer(ctx, req.(*InternalServerObject))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -92,8 +92,8 @@ var Node_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*NodeServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Send",
-			Handler:    _Node_Send_Handler,
+			MethodName: "Transfer",
+			Handler:    _Node_Transfer_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -46,7 +46,7 @@ func (d *Daemon) startEventHandler() {
 	for event := range d.outboundChan {
 		nodeClient := d.nodeClientProvider.PickClient()
 		internalServerObject := event.Data.(*model.InternalServerObject)
-		err := nodeClient.Send(internalServerObject)
+		err := nodeClient.Transfer(internalServerObject)
 
 		if err != nil {
 			log.Printf("Can not send %v to %v", internalServerObject, nodeClient)
