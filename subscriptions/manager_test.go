@@ -35,7 +35,7 @@ func Test_ShouldHandleObjectFromInboundChannelByPublishingItToOutboundChannelIfT
 		t.Fatal("could not serialize:", err)
 	}
 	cloudObj := &cloud.CloudObject{Entity: &anypb.Any{TypeUrl: entityType, Value: serialized}}
-	internalServerObject := model.NewInternalServerObject(cloudObj)
+	internalServerObject := model.NewIsoFromCloudObject(cloudObj)
 	dataEvent := bus.DataEvent{
 		Data:  internalServerObject,
 		Topic: inboundChannelName,
@@ -87,7 +87,7 @@ func Test_ShouldRegisterSubscriptionSuccessfullyAndSendObjectViaStreamAndReceive
 		t.Fatal("could not serialize:", err)
 	}
 	cloudObj := &cloud.CloudObject{Entity: &anypb.Any{TypeUrl: entityType, Value: serialized}}
-	internalServerObject := model.NewInternalServerObject(cloudObj)
+	internalServerObject := model.NewIsoFromCloudObject(cloudObj)
 	dataEvent := bus.DataEvent{
 		Data:  internalServerObject,
 		Topic: inboundChannelName,
@@ -135,5 +135,4 @@ func Test_ShouldRegisterSubscriptionSuccessfullyAndSendObjectViaStreamAndReceive
 
 	// Then
 	assert.Equal(t, nil, err, "RegisterSubscription should not return an error")
-	assert.Equal(t, model.PROCESSED, internalServerObject.Metadata.Status, "Expected Processed Status")
 }

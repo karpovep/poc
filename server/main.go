@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"google.golang.org/grpc"
 	"log"
 	"net"
@@ -103,11 +102,11 @@ func (s *GrpcServer) Subscribe(stream cloud.Cloud_SubscribeServer) error {
 	return nil
 }
 
-func (s *GrpcServer) Commit(ctx context.Context, incomingObject *cloud.CloudObject) (*cloud.OperationResult, error) {
-	fmt.Println("incomingObject", incomingObject)
-	if incomingObject.Id == "" {
-		incomingObject.Id = s.Utils.GenerateTimeUuid()
-	}
-	s.EventBus.Publish(s.inboundChannelName, model.NewInternalServerObject(incomingObject))
+func (s *GrpcServer) Save(ctx context.Context, cloudObj *cloud.CloudObject) (*cloud.OperationResult, error) {
+	log.Println("incomingObject", cloudObj)
+	cloudObj.Id = s.Utils.GenerateTimeUuid()
+	iso := model.NewIsoFromCloudObject(cloudObj)
+	iso.Metadata.InitialNodeId = s.Config.NodeId
+	s.EventBus.Publish(s.inboundChannelName, iso)
 	return &cloud.OperationResult{Status: cloud.OperationStatus_OK}, nil
 }

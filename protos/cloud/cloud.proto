@@ -1,14 +1,14 @@
 syntax = "proto3";
 
-option go_package = "protos/cloud";
+option go_package = "poc/protos/cloud";
 import "google/protobuf/any.proto";
 
-package protos.cloud;
+package poc.protos.cloud;
 
 // service definition.
 service Cloud {
-    rpc Commit (CloudObject) returns (OperationResult) {}
-    rpc Subscribe(stream CloudObject) returns (stream CloudObject) {}
+    rpc Save (CloudObject) returns (OperationResult) {}
+    rpc Subscribe (stream CloudObject) returns (stream CloudObject) {}
 }
 
 message CloudObject {
@@ -34,5 +34,4 @@ message SubscribeRequest {
 }
 
 message Acknowledge {
-
 }

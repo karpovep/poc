@@ -9,7 +9,6 @@ import (
 	"poc/bus"
 	"poc/config"
 	"poc/model"
-	"poc/protos/cloud"
 	"poc/protos/nodes"
 )
 
@@ -62,11 +61,15 @@ func (s *NodeServer) Stop() {
 	s.server.GracefulStop()
 }
 
-func (s *NodeServer) Transfer(ctx context.Context, isoObj *nodes.InternalServerObject) (*nodes.Acknowledge, error) {
-	log.Println("received obj from transfer", isoObj.Id)
-	s.EventBus.Publish(s.transferChannelName, model.NewInternalServerObject(&cloud.CloudObject{
-		Id:     isoObj.Id,
-		Entity: isoObj.Entity,
-	}))
+func (s *NodeServer) Transfer(ctx context.Context, iso *nodes.ISO) (*nodes.Acknowledge, error) {
+	log.Println("received obj from transfer", iso.CloudObj.Id)
+	s.EventBus.Publish(s.transferChannelName, iso)
 	return &nodes.Acknowledge{}, nil
+}
+
+func (s *NodeServer) GetInfo(ctx context.Context, infoReq *nodes.NodeInfoRequest) (*nodes.NodeInfoResponse, error) {
+	log.Println("GetInfo request")
+	return &nodes.NodeInfoResponse{
+		Id: s.Config.NodeId,
+	}, nil
 }

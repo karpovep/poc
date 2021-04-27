@@ -81,7 +81,7 @@ func Test_ShouldSaveInternalServerObjectAndFindITByTypeAndId(t *testing.T) {
 		Id:     gocql.TimeUUID().String(),
 		Entity: &anypb.Any{TypeUrl: entityType, Value: serialized},
 	}
-	internalServerObject := model.NewInternalServerObject(cloudObj)
+	internalServerObject := model.NewIsoFromCloudObject(cloudObj)
 
 	cfg := &config.CloudConfig{
 		Cassandra: config.CassandraConfig{
@@ -113,10 +113,10 @@ func Test_ShouldSaveInternalServerObjectAndFindITByTypeAndId(t *testing.T) {
 	}
 
 	// Then
-	assert.Equal(t, cloudObj, actualObj.Object, "encoded saved and retrieved objects are not identical")
+	assert.Equal(t, cloudObj, actualObj.CloudObj, "encoded saved and retrieved objects are not identical")
 
 	var actualEntity cloud.TestEntity
-	if err := actualObj.Object.Entity.UnmarshalTo(&actualEntity); err != nil {
+	if err := actualObj.CloudObj.Entity.UnmarshalTo(&actualEntity); err != nil {
 		t.Fatalf("Could not unmarshal TestEntity from the field: %s", err)
 	}
 	assert.Equal(t, entity.Name, actualEntity.Name, "after decoding: Name is not identical in saved and retrieved entities")

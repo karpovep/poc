@@ -5,12 +5,14 @@ import (
 	"poc/app"
 	"poc/bus"
 	"poc/model"
+	"poc/protos/nodes"
 	"poc/utils"
+	"time"
 )
 
 type (
 	ICache interface {
-		ScheduleProcessing(obj *model.InternalServerObject)
+		ScheduleProcessing(obj *nodes.ISO)
 		Stop()
 	}
 
@@ -43,13 +45,13 @@ func NewCache(appContext app.IAppContext) ICache {
 
 func (cache *Cache) setupRetryHandler() {
 	for evnt := range cache.retryChan {
-		internalServerObject := evnt.Data.(*model.InternalServerObject)
+		internalServerObject := evnt.Data.(*nodes.ISO)
 		go cache.ScheduleProcessing(internalServerObject)
 	}
 }
 
-func (cache *Cache) ScheduleProcessing(obj *model.InternalServerObject) {
-	timedOut := <-cache.timer.After(obj.Metadata.RetryIn)
+func (cache *Cache) ScheduleProcessing(obj *nodes.ISO) {
+	timedOut := <-cache.timer.After(time.Second * time.Duration(obj.Metadata.RetryIn))
 	if timedOut {
 		log.Println("cache: publish obj")
 		cache.EventBus.Publish(cache.cachedChannelName, obj)

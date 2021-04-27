@@ -6,6 +6,7 @@ import (
 	"poc/bus"
 	"poc/model"
 	"poc/nodes"
+	nodes_protoc "poc/protos/nodes"
 )
 
 type (
@@ -45,7 +46,7 @@ func NewDaemon(appContext app.IAppContext) IDaemon {
 func (d *Daemon) startEventHandler() {
 	for event := range d.outboundChan {
 		nodeClient := d.nodeClientProvider.PickClient()
-		internalServerObject := event.Data.(*model.InternalServerObject)
+		internalServerObject := event.Data.(*nodes_protoc.ISO)
 		err := nodeClient.Transfer(internalServerObject)
 
 		if err != nil {

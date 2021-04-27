@@ -5,14 +5,13 @@ import (
 	"fmt"
 	"google.golang.org/grpc"
 	"log"
-	"poc/model"
 	"poc/protos/nodes"
 	"time"
 )
 
 type (
 	INodeClient interface {
-		Transfer(obj *model.InternalServerObject) error
+		Transfer(obj *nodes.ISO) error
 		Start()
 		Stop()
 	}
@@ -32,17 +31,14 @@ func NewNodeClient(address string) INodeClient {
 	return nc
 }
 
-func (c *NodeClient) Transfer(obj *model.InternalServerObject) error {
+func (c *NodeClient) Transfer(iso *nodes.ISO) error {
 	if c.grpcClient == nil {
-		return fmt.Errorf("cannot transfer object, grpcClient is not connected to another nodeServer, ID=%s", obj.Object.Id)
+		return fmt.Errorf("cannot transfer object, grpcClient is not connected to another nodeServer, ID=%s", iso.CloudObj.Id)
 	}
-	log.Println("transfer obj", obj.Object.Id)
+	log.Println("transfer obj", iso.CloudObj.Id)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
-	_, err := c.grpcClient.Transfer(ctx, &nodes.InternalServerObject{
-		Id:     obj.Object.Id,
-		Entity: obj.Object.Entity,
-	})
+	_, err := c.grpcClient.Transfer(ctx, iso)
 	if err != nil {
 		log.Println("error transferring object", err)
 		return err
@@ -52,7 +48,6 @@ func (c *NodeClient) Transfer(obj *model.InternalServerObject) error {
 
 func (c *NodeClient) Start() {
 	// Set up a connection to the server.
-	// todo run establishing connection in background, handle reconnection logic
 	conn, err := grpc.Dial(c.addr, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		log.Println("nodeClient can't connect to another nodeServer, address =", c.addr)

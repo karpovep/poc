@@ -11,6 +11,7 @@ import (
 	"poc/config"
 	"poc/model"
 	"poc/protos/cloud"
+	"poc/protos/nodes"
 	"testing"
 )
 
@@ -27,16 +28,16 @@ func Test_ShouldTransferObjectFromNodeCLientToNodeServer(t *testing.T) {
 		log.Fatal("could not serialize", err)
 	}
 	entity := &anypb.Any{TypeUrl: string(val.ProtoReflect().Descriptor().FullName()), Value: serialized}
-	iso := model.NewInternalServerObject(&cloud.CloudObject{
+	iso := model.NewIsoFromCloudObject(&cloud.CloudObject{
 		Id:     id,
 		Entity: entity,
 	})
 
 	transferChannelName := "transfer.test"
 
-	var actualIso *model.InternalServerObject
+	var actualIso *nodes.ISO
 	mockEventBus := bus_mock.NewMockIEventBus(mockCtrl)
-	mockEventBus.EXPECT().Publish(transferChannelName, gomock.Any()).Do(func(channnamName string, arg *model.InternalServerObject) {
+	mockEventBus.EXPECT().Publish(transferChannelName, gomock.Any()).Do(func(channnamName string, arg *nodes.ISO) {
 		actualIso = arg
 	})
 
@@ -63,6 +64,6 @@ func Test_ShouldTransferObjectFromNodeCLientToNodeServer(t *testing.T) {
 
 	// Then - all expected calls are done
 	assert.Equal(t, nil, err, "client should transfer obj without error")
-	assert.Equal(t, iso.Object.Id, actualIso.Object.Id, "Object with another ID was published")
-	assert.Equal(t, iso.Object.Entity.Value, actualIso.Object.Entity.Value, "Object with another entity value was published")
+	assert.Equal(t, iso.CloudObj.Id, actualIso.CloudObj.Id, "Object with another ID was published")
+	assert.Equal(t, iso.CloudObj.Entity.Value, actualIso.CloudObj.Entity.Value, "Object with another entity value was published")
 }

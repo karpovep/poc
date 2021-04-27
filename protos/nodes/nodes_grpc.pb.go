@@ -18,7 +18,8 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type NodeClient interface {
-	Transfer(ctx context.Context, in *InternalServerObject, opts ...grpc.CallOption) (*Acknowledge, error)
+	GetInfo(ctx context.Context, in *NodeInfoRequest, opts ...grpc.CallOption) (*NodeInfoResponse, error)
+	Transfer(ctx context.Context, in *ISO, opts ...grpc.CallOption) (*Acknowledge, error)
 }
 
 type nodeClient struct {
@@ -29,9 +30,18 @@ func NewNodeClient(cc grpc.ClientConnInterface) NodeClient {
 	return &nodeClient{cc}
 }
 
-func (c *nodeClient) Transfer(ctx context.Context, in *InternalServerObject, opts ...grpc.CallOption) (*Acknowledge, error) {
+func (c *nodeClient) GetInfo(ctx context.Context, in *NodeInfoRequest, opts ...grpc.CallOption) (*NodeInfoResponse, error) {
+	out := new(NodeInfoResponse)
+	err := c.cc.Invoke(ctx, "/poc.protos.nodes.Node/GetInfo", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *nodeClient) Transfer(ctx context.Context, in *ISO, opts ...grpc.CallOption) (*Acknowledge, error) {
 	out := new(Acknowledge)
-	err := c.cc.Invoke(ctx, "/protos.dpc.nodes.Node/Transfer", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/poc.protos.nodes.Node/Transfer", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +52,8 @@ func (c *nodeClient) Transfer(ctx context.Context, in *InternalServerObject, opt
 // All implementations must embed UnimplementedNodeServer
 // for forward compatibility
 type NodeServer interface {
-	Transfer(context.Context, *InternalServerObject) (*Acknowledge, error)
+	GetInfo(context.Context, *NodeInfoRequest) (*NodeInfoResponse, error)
+	Transfer(context.Context, *ISO) (*Acknowledge, error)
 	mustEmbedUnimplementedNodeServer()
 }
 
@@ -50,7 +61,10 @@ type NodeServer interface {
 type UnimplementedNodeServer struct {
 }
 
-func (UnimplementedNodeServer) Transfer(context.Context, *InternalServerObject) (*Acknowledge, error) {
+func (UnimplementedNodeServer) GetInfo(context.Context, *NodeInfoRequest) (*NodeInfoResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetInfo not implemented")
+}
+func (UnimplementedNodeServer) Transfer(context.Context, *ISO) (*Acknowledge, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Transfer not implemented")
 }
 func (UnimplementedNodeServer) mustEmbedUnimplementedNodeServer() {}
@@ -66,8 +80,26 @@ func RegisterNodeServer(s grpc.ServiceRegistrar, srv NodeServer) {
 	s.RegisterService(&Node_ServiceDesc, srv)
 }
 
+func _Node_GetInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(NodeInfoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NodeServer).GetInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/poc.protos.nodes.Node/GetInfo",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NodeServer).GetInfo(ctx, req.(*NodeInfoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Node_Transfer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(InternalServerObject)
+	in := new(ISO)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -76,10 +108,10 @@ func _Node_Transfer_Handler(srv interface{}, ctx context.Context, dec func(inter
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/protos.dpc.nodes.Node/Transfer",
+		FullMethod: "/poc.protos.nodes.Node/Transfer",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(NodeServer).Transfer(ctx, req.(*InternalServerObject))
+		return srv.(NodeServer).Transfer(ctx, req.(*ISO))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -88,9 +120,13 @@ func _Node_Transfer_Handler(srv interface{}, ctx context.Context, dec func(inter
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Node_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "protos.dpc.nodes.Node",
+	ServiceName: "poc.protos.nodes.Node",
 	HandlerType: (*NodeServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetInfo",
+			Handler:    _Node_GetInfo_Handler,
+		},
 		{
 			MethodName: "Transfer",
 			Handler:    _Node_Transfer_Handler,

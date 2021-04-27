@@ -4,12 +4,12 @@ import (
 	"poc/app"
 	"poc/bus"
 	"poc/model"
-	"time"
+	"poc/protos/nodes"
 )
 
 type (
 	IRetryResolver interface {
-		ProcessRetryableObject(obj *model.InternalServerObject)
+		ProcessRetryableObject(obj *nodes.ISO)
 		Stop()
 	}
 
@@ -39,14 +39,14 @@ func NewRetryResolver(appContext app.IAppContext) IRetryResolver {
 
 func (r *RetryResolver) setupUnprocessedHandler() {
 	for evnt := range r.unprocessedChan {
-		internalServerObject := evnt.Data.(*model.InternalServerObject)
+		internalServerObject := evnt.Data.(*nodes.ISO)
 		r.ProcessRetryableObject(internalServerObject)
 	}
 }
 
-func (r *RetryResolver) ProcessRetryableObject(obj *model.InternalServerObject) {
+func (r *RetryResolver) ProcessRetryableObject(obj *nodes.ISO) {
 	// todo - implement retry logic based on reason provided by other processors and historical data
-	obj.Metadata.RetryIn = time.Second
+	obj.Metadata.RetryIn = 1 // 1 second
 	r.EventBus.Publish(r.retryChannelName, obj)
 }
 

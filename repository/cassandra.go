@@ -9,6 +9,7 @@ import (
 	"poc/app"
 	"poc/model"
 	"poc/protos/cloud"
+	"poc/protos/nodes"
 	"text/template"
 )
 
@@ -16,8 +17,8 @@ type (
 	ICassandraRepository interface {
 		IRepository
 		CreateTable(params *CreateTableQueryParams) error
-		SaveInternalServerObject(obj *model.InternalServerObject) error
-		FindByTypeAndId(objType string, id string) (*model.InternalServerObject, error)
+		SaveInternalServerObject(obj *nodes.ISO) error
+		FindByTypeAndId(objType string, id string) (*nodes.ISO, error)
 	}
 
 	CassandraRepository struct {
@@ -46,7 +47,7 @@ const createTableQueryTemplate = "" +
 	"PRIMARY KEY ({{ .PrimaryKey }})" +
 	");"
 
-const internalServerObjectTable = "internal_server_object"
+const isoTable = "internal_server_object"
 
 func NewCassandraRepository(appContext app.IAppContext) ICassandraRepository {
 	return &CassandraRepository{
@@ -67,25 +68,25 @@ func (r *CassandraRepository) CreateTable(params *CreateTableQueryParams) error 
 	return r.session.Query(createTableQuery.String()).Exec()
 }
 
-func (r *CassandraRepository) SaveInternalServerObject(iso *model.InternalServerObject) error {
+func (r *CassandraRepository) SaveInternalServerObject(iso *nodes.ISO) error {
 	session, err := r.cluster.CreateSession()
 	if err != nil {
 		return err
 	}
 	defer session.Close()
 
-	partitionKey, err := r.extractPartitionKey(iso.Object.Id)
+	partitionKey, err := r.extractPartitionKey(iso.CloudObj.Id)
 	if err != nil {
 		return err
 	}
 	if err := session.Query(`INSERT INTO internal_server_object (partition_key, type, id, cloud_object) VALUES (?, ?, ?, ?)`,
-		partitionKey, iso.Object.Entity.TypeUrl, iso.Object.Id, iso.Object.Entity.Value).Exec(); err != nil {
+		partitionKey, iso.CloudObj.Entity.TypeUrl, iso.CloudObj.Id, iso.CloudObj.Entity.Value).Exec(); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (r *CassandraRepository) FindByTypeAndId(objType string, id string) (*model.InternalServerObject, error) {
+func (r *CassandraRepository) FindByTypeAndId(objType string, id string) (*nodes.ISO, error) {
 	partitionKey, err := r.extractPartitionKey(id)
 	if err != nil {
 		return nil, err
@@ -97,7 +98,7 @@ func (r *CassandraRepository) FindByTypeAndId(objType string, id string) (*model
 		log.Fatal(err)
 	}
 
-	return model.NewInternalServerObject(&cloud.CloudObject{
+	return model.NewIsoFromCloudObject(&cloud.CloudObject{
 		Id:     id,
 		Entity: &anypb.Any{TypeUrl: objType, Value: cloudObject},
 	}), nil
@@ -131,7 +132,7 @@ func (r *CassandraRepository) Start() {
 	// ensure table is created
 	err = r.CreateTable(&CreateTableQueryParams{
 		Keyspace:   r.cluster.Keyspace,
-		Table:      internalServerObjectTable,
+		Table:      isoTable,
 		PrimaryKey: "(partition_key), type, id",
 		Fields: []struct {
 			Name string
@@ -144,7 +145,7 @@ func (r *CassandraRepository) Start() {
 		},
 	})
 	if err != nil {
-		log.Fatalln("cannot create table:", internalServerObjectTable, err)
+		log.Fatalln("cannot create table:", isoTable, err)
 	}
 	go r.setupIncomingHandler()
 	r.EventBus.Subscribe(r.inboundChannelName, r.inboundRepoChan)
@@ -157,7 +158,7 @@ func (r *CassandraRepository) Stop() {
 
 func (r *CassandraRepository) setupIncomingHandler() {
 	for evnt := range r.inboundRepoChan {
-		internalServerObject := evnt.Data.(*model.InternalServerObject)
+		internalServerObject := evnt.Data.(*nodes.ISO)
 		err := r.SaveInternalServerObject(internalServerObject)
 		//todo handle errors
 		if err != nil {

@@ -1,3 +1,4 @@
+nodeId: node-1
 nodeServer:
   port: :40042
 server:

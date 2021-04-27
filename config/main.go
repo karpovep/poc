@@ -25,6 +25,7 @@ type (
 	}
 
 	CloudConfig struct {
+		NodeId     string `yaml:"nodeId"`
 		Server     ServerConfig
 		NodeServer NodeServerConfig `yaml:"nodeServer"`
 		Client     ClientConfig

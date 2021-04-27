@@ -1,18 +1,32 @@
 syntax = "proto3";
 
-option go_package = "protos/dpc/nodes";
-import "google/protobuf/any.proto";
+option go_package = "poc/protos/nodes";
+import "protos/cloud/cloud.proto";
 
-package protos.dpc.nodes;
+package poc.protos.nodes;
 
 service Node {
-    rpc Transfer (InternalServerObject) returns (Acknowledge) {}
+    rpc GetInfo (NodeInfoRequest) returns (NodeInfoResponse) {}
+    rpc Transfer (ISO) returns (Acknowledge) {}
 }
 
-message InternalServerObject {
-    string id = 1;
-    google.protobuf.Any entity = 2;
+message IsoMeta {
+    string initialNodeId = 1;
+    int32 retryIn = 2;
+}
+
+// ISO stands for Internal Server Object
+message ISO {
+    protos.cloud.CloudObject cloudObj = 1;
+    IsoMeta metadata = 2;
 }
 
 message Acknowledge {
+}
+
+message NodeInfoRequest {
+}
+
+message NodeInfoResponse {
+    string id = 1;
 }

@@ -18,7 +18,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type CloudClient interface {
-	Commit(ctx context.Context, in *CloudObject, opts ...grpc.CallOption) (*OperationResult, error)
+	Save(ctx context.Context, in *CloudObject, opts ...grpc.CallOption) (*OperationResult, error)
 	Subscribe(ctx context.Context, opts ...grpc.CallOption) (Cloud_SubscribeClient, error)
 }
 
@@ -30,9 +30,9 @@ func NewCloudClient(cc grpc.ClientConnInterface) CloudClient {
 	return &cloudClient{cc}
 }
 
-func (c *cloudClient) Commit(ctx context.Context, in *CloudObject, opts ...grpc.CallOption) (*OperationResult, error) {
+func (c *cloudClient) Save(ctx context.Context, in *CloudObject, opts ...grpc.CallOption) (*OperationResult, error) {
 	out := new(OperationResult)
-	err := c.cc.Invoke(ctx, "/protos.cloud.Cloud/Commit", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/poc.protos.cloud.Cloud/Save", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +40,7 @@ func (c *cloudClient) Commit(ctx context.Context, in *CloudObject, opts ...grpc.
 }
 
 func (c *cloudClient) Subscribe(ctx context.Context, opts ...grpc.CallOption) (Cloud_SubscribeClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Cloud_ServiceDesc.Streams[0], "/protos.cloud.Cloud/Subscribe", opts...)
+	stream, err := c.cc.NewStream(ctx, &Cloud_ServiceDesc.Streams[0], "/poc.protos.cloud.Cloud/Subscribe", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +74,7 @@ func (x *cloudSubscribeClient) Recv() (*CloudObject, error) {
 // All implementations must embed UnimplementedCloudServer
 // for forward compatibility
 type CloudServer interface {
-	Commit(context.Context, *CloudObject) (*OperationResult, error)
+	Save(context.Context, *CloudObject) (*OperationResult, error)
 	Subscribe(Cloud_SubscribeServer) error
 	mustEmbedUnimplementedCloudServer()
 }
@@ -83,8 +83,8 @@ type CloudServer interface {
 type UnimplementedCloudServer struct {
 }
 
-func (UnimplementedCloudServer) Commit(context.Context, *CloudObject) (*OperationResult, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Commit not implemented")
+func (UnimplementedCloudServer) Save(context.Context, *CloudObject) (*OperationResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Save not implemented")
 }
 func (UnimplementedCloudServer) Subscribe(Cloud_SubscribeServer) error {
 	return status.Errorf(codes.Unimplemented, "method Subscribe not implemented")
@@ -102,20 +102,20 @@ func RegisterCloudServer(s grpc.ServiceRegistrar, srv CloudServer) {
 	s.RegisterService(&Cloud_ServiceDesc, srv)
 }
 
-func _Cloud_Commit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Cloud_Save_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CloudObject)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(CloudServer).Commit(ctx, in)
+		return srv.(CloudServer).Save(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/protos.cloud.Cloud/Commit",
+		FullMethod: "/poc.protos.cloud.Cloud/Save",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CloudServer).Commit(ctx, req.(*CloudObject))
+		return srv.(CloudServer).Save(ctx, req.(*CloudObject))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -150,12 +150,12 @@ func (x *cloudSubscribeServer) Recv() (*CloudObject, error) {
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Cloud_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "protos.cloud.Cloud",
+	ServiceName: "poc.protos.cloud.Cloud",
 	HandlerType: (*CloudServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Commit",
-			Handler:    _Cloud_Commit_Handler,
+			MethodName: "Save",
+			Handler:    _Cloud_Save_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

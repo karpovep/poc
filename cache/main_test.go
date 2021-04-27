@@ -22,8 +22,8 @@ func Test_ShouldProcessObjectBySchedulingReprocessing(t *testing.T) {
 	retryChan := make(bus.DataChannel)
 
 	cloudObj := &cloud.CloudObject{}
-	internalServerObject := model.NewInternalServerObject(cloudObj)
-	retryIn := time.Minute
+	internalServerObject := model.NewIsoFromCloudObject(cloudObj)
+	retryIn := int32(60)
 	internalServerObject.Metadata.RetryIn = retryIn
 	dataEvent := bus.DataEvent{
 		Data:  internalServerObject,
@@ -36,7 +36,7 @@ func Test_ShouldProcessObjectBySchedulingReprocessing(t *testing.T) {
 
 	mockTimerCh := make(chan bool)
 	mockCacheTimer := utils_mock.NewMockICancellableTimer(mockCtrl)
-	mockCacheTimer.EXPECT().After(retryIn).Return(mockTimerCh)
+	mockCacheTimer.EXPECT().After(time.Second * time.Duration(retryIn)).Return(mockTimerCh)
 
 	mockAppContext := app_mock.NewMockIAppContext(mockCtrl)
 	mockAppContext.EXPECT().Get("eventBus").Return(mockEventBus)

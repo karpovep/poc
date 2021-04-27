@@ -8,6 +8,7 @@ import (
 	"poc/bus"
 	"poc/model"
 	"poc/protos/cloud"
+	"poc/protos/nodes"
 	"poc/utils"
 	"sync"
 )
@@ -91,26 +92,25 @@ func (sm *SubscriptionManager) UnregisterSubscription(objectType string, subId s
 
 func (sm *SubscriptionManager) setupIncomingHandler() {
 	for evnt := range sm.inboundChan {
-		internalServerObject := evnt.Data.(*model.InternalServerObject)
+		internalServerObject := evnt.Data.(*nodes.ISO)
 		processed := sm.processObject(internalServerObject)
 		if !processed {
 			sm.EventBus.Publish(sm.outboundChannelName, internalServerObject)
 		} else {
-			internalServerObject.Metadata.Status = model.PROCESSED
 			sm.EventBus.Publish(sm.processedChannelName, internalServerObject)
 		}
 	}
 }
 
-func (sm *SubscriptionManager) processObject(obj *model.InternalServerObject) bool {
-	objType := obj.Object.Entity.TypeUrl
+func (sm *SubscriptionManager) processObject(obj *nodes.ISO) bool {
+	objType := obj.CloudObj.Entity.TypeUrl
 	for subId, subscriber := range sm.subscriptions[objType] {
 		lockAcquired := subscriber.casMut.TryLock()
 		if lockAcquired {
 			defer subscriber.casMut.Unlock()
 			// send object to client for the processing
 			log.Println("sending object to subscriber:", subId)
-			err := subscriber.stream.Send(obj.Object)
+			err := subscriber.stream.Send(obj.CloudObj)
 			if err != nil {
 				log.Fatal("Send error:", err)
 			}

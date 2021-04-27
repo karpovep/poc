@@ -1,36 +1,14 @@
 package model
 
 import (
-	"github.com/gocql/gocql"
 	"poc/protos/cloud"
-	"time"
+	"poc/protos/nodes"
 )
 
-type (
-	ObjectStatus string
-
-	ObjectMeta struct {
-		Id      string
-		Status  ObjectStatus
-		RetryIn time.Duration
-	}
-
-	InternalServerObject struct {
-		Object   *cloud.CloudObject
-		Metadata *ObjectMeta
-	}
-)
-
-func NewInternalServerObject(cloudObj *cloud.CloudObject) *InternalServerObject {
-	if cloudObj.Id == "" {
-		//todo check cloudObj.Id for the TimeUUID validity
-		cloudObj.Id = gocql.TimeUUID().String()
-	}
-	return &InternalServerObject{
-		Object: cloudObj,
-		Metadata: &ObjectMeta{
-			Status: NEW,
-		},
+func NewIsoFromCloudObject(cloudObj *cloud.CloudObject) *nodes.ISO {
+	return &nodes.ISO{
+		CloudObj: cloudObj,
+		Metadata: &nodes.IsoMeta{},
 	}
 }
 
@@ -42,7 +20,4 @@ const (
 	RETRY_CHANNEL_NAME       string = "retry"
 	CACHED_CHANNEL_NAME      string = "cached"
 	PROCESSED_CHANNEL_NAME   string = "processed"
-
-	NEW       ObjectStatus = "NEW"
-	PROCESSED ObjectStatus = "PROCESSED"
 )

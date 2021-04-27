@@ -83,7 +83,7 @@ func main() {
 		log.Fatal("could not serialize", err)
 	}
 	msg := &anypb.Any{TypeUrl: string(val.ProtoReflect().Descriptor().FullName()), Value: serialized}
-	opRes, err := c.Commit(ctx, &cloud.CloudObject{Entity: msg})
+	opRes, err := c.Save(ctx, &cloud.CloudObject{Entity: msg})
 	if err != nil {
 		log.Fatalf("could not greet: %v", err)
 	}
