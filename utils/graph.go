@@ -6,8 +6,7 @@ import (
 
 // Node a single node that composes the tree
 type Node struct {
-	id    string
-	value interface{}
+	id string
 }
 
 // Graph the graph itself

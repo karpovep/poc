@@ -12,23 +12,25 @@ import (
 type (
 	INodeClient interface {
 		Transfer(obj *nodes.ISO) error
+		GetServerNodeId() string
 		Start()
 		Stop()
 	}
 
 	NodeClient struct {
-		addr       string
-		grpcClient nodes.NodeClient
-		conn       *grpc.ClientConn
+		addr         string
+		nodeId       string
+		ServerNodeId string
+		grpcClient   nodes.NodeClient
+		conn         *grpc.ClientConn
 	}
 )
 
-func NewNodeClient(address string) INodeClient {
-	nc := &NodeClient{
-		addr: address,
+func NewNodeClient(address string, nodeId string) INodeClient {
+	return &NodeClient{
+		addr:   address,
+		nodeId: nodeId,
 	}
-
-	return nc
 }
 
 func (c *NodeClient) Transfer(iso *nodes.ISO) error {
@@ -38,12 +40,17 @@ func (c *NodeClient) Transfer(iso *nodes.ISO) error {
 	log.Println("transfer obj", iso.CloudObj.Id)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
+	iso.TransferredByNodes[c.nodeId] = time.Now().Unix()
 	_, err := c.grpcClient.Transfer(ctx, iso)
 	if err != nil {
 		log.Println("error transferring object", err)
 		return err
 	}
 	return nil
+}
+
+func (c *NodeClient) GetServerNodeId() string {
+	return c.ServerNodeId
 }
 
 func (c *NodeClient) Start() {
@@ -55,6 +62,14 @@ func (c *NodeClient) Start() {
 	c.conn = conn
 	c.grpcClient = nodes.NewNodeClient(c.conn)
 	log.Println("nodeClient established connection to", c.addr)
+	// request for server info
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+	infoResponse, err := c.grpcClient.GetInfo(ctx, &nodes.NodeInfoRequest{})
+	if err != nil {
+		log.Fatalln("GetInfo error", err)
+	}
+	c.ServerNodeId = infoResponse.Id
 }
 
 func (c *NodeClient) Stop() {

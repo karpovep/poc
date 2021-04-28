@@ -21,6 +21,7 @@ func Test_ShouldTransferObjectFromNodeCLientToNodeServer(t *testing.T) {
 	defer mockCtrl.Finish()
 	errChan := make(chan error)
 
+	nodeId := "test-node"
 	id := "some-mock-time-uuid"
 	val := &cloud.TestEntity{Name: "Test Entity"}
 	serialized, err := proto.Marshal(val)
@@ -42,6 +43,7 @@ func Test_ShouldTransferObjectFromNodeCLientToNodeServer(t *testing.T) {
 	})
 
 	cfg := &config.CloudConfig{
+		NodeId: nodeId,
 		NodeServer: config.NodeServerConfig{
 			Port: ":60001",
 		},
@@ -56,7 +58,7 @@ func Test_ShouldTransferObjectFromNodeCLientToNodeServer(t *testing.T) {
 	nodeServer.Start()
 
 	serverAddress := "localhost:60001"
-	nodeClient := NewNodeClient(serverAddress)
+	nodeClient := NewNodeClient(serverAddress, nodeId)
 	nodeClient.Start()
 
 	// When
@@ -66,4 +68,5 @@ func Test_ShouldTransferObjectFromNodeCLientToNodeServer(t *testing.T) {
 	assert.Equal(t, nil, err, "client should transfer obj without error")
 	assert.Equal(t, iso.CloudObj.Id, actualIso.CloudObj.Id, "Object with another ID was published")
 	assert.Equal(t, iso.CloudObj.Entity.Value, actualIso.CloudObj.Entity.Value, "Object with another entity value was published")
+	assert.Equal(t, nodeId, nodeClient.GetServerNodeId(), "unexpected serverNodeId")
 }

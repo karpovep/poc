@@ -38,7 +38,7 @@ Each Node should implement the following functionality:
 
 
 ### Acceptance Criteria
-Basically, the following test case should pass:
+:eight_spoked_asterisk: Basically, the following test case should pass:
 1. Run 2 Nodes
 2. Nodes has to be able to connect between each other
 3. Define 2 simple type of objects (references to each other are not required)
@@ -47,10 +47,10 @@ Basically, the following test case should pass:
 6. Each client should generate an object of another pre-defined type and push it into the cloud
 
 #### Expected behaviour
-* PoC accepts objects of 2 types;
-* PoC accepts subscription(s) from the client based on type of the object;
-* PoC transfers object(s) between Nodes based on rule - Node does not have registered subscriptions to process object(s);
-* Clients are getting notified with unprocessed objects which they were subscribed to
+* :white_check_mark: PoC accepts objects of 2 types;
+* :white_check_mark: PoC accepts subscription(s) from the client based on type of the object;
+* :white_check_mark: PoC transfers object(s) between Nodes based on rule - Node does not have registered subscriptions to process object(s);
+* :white_check_mark: Clients are getting notified with unprocessed objects which they were subscribed to
 
 
 ### Main Advantages
@@ -69,7 +69,7 @@ Basically, the following test case should pass:
 
 ### Roadmap
 - :white_check_mark: Implement simplified PoC (1 server node and 1 client)
-- :large_orange_diamond: Implement PoC (2 nodes + 2 clients)
+- :white_check_mark: Implement PoC (2 nodes + 2 clients)
 - :large_orange_diamond: introduce data storage (store data + querying data)
 - :x: Failover handling
 - :x: Logging and monitoring

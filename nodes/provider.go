@@ -1,14 +1,17 @@
 package nodes
 
 import (
-	"math/rand"
 	"poc/app"
 	"poc/config"
+	"poc/protos/nodes"
+	"time"
 )
+
+const RETRANSFER_DELAY = 5 // 5 seconds to transfer object to the node which had transferred it before
 
 type (
 	INodeClientProvider interface {
-		PickClient() INodeClient
+		PickClient(iso *nodes.ISO) INodeClient
 		Start()
 		Stop()
 	}
@@ -29,7 +32,7 @@ func NewNodeClientProvider(appContext app.IAppContext) INodeClientProvider {
 
 func (p *NodeClientProvider) Start() {
 	for _, nodeConfig := range p.config.Server.Nodes {
-		client := NewNodeClient(nodeConfig)
+		client := NewNodeClient(nodeConfig, p.config.NodeId)
 		p.clients = append(p.clients, client)
 		go client.Start()
 	}
@@ -41,6 +44,21 @@ func (p *NodeClientProvider) Stop() {
 	}
 }
 
-func (p *NodeClientProvider) PickClient() INodeClient {
-	return p.clients[rand.Intn(len(p.clients))] //take random client
+func (p *NodeClientProvider) PickClient(iso *nodes.ISO) INodeClient {
+	// try to choose the node which hasn't received iso yet
+	for _, c := range p.clients {
+		if _, ok := iso.TransferredByNodes[c.GetServerNodeId()]; !ok {
+			return c
+		}
+	}
+
+	// try to choose the node which had transferred iso earlier than now - RETRANSFER_DELAY
+	for _, c := range p.clients {
+		if t, ok := iso.TransferredByNodes[c.GetServerNodeId()]; ok && t < time.Now().Unix()-RETRANSFER_DELAY {
+			return c
+		}
+	}
+
+	// cannot pick any client
+	return nil
 }

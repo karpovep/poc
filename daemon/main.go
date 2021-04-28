@@ -45,12 +45,16 @@ func NewDaemon(appContext app.IAppContext) IDaemon {
 
 func (d *Daemon) startEventHandler() {
 	for event := range d.outboundChan {
-		nodeClient := d.nodeClientProvider.PickClient()
-		internalServerObject := event.Data.(*nodes_protoc.ISO)
-		err := nodeClient.Transfer(internalServerObject)
+		iso := event.Data.(*nodes_protoc.ISO)
+		nodeClient := d.nodeClientProvider.PickClient(iso)
+		if nodeClient == nil {
+			d.EventBus.Publish(d.unprocessedChannelName, event.Data)
+			continue
+		}
+		err := nodeClient.Transfer(iso)
 
 		if err != nil {
-			log.Printf("Can not send %v to %v", internalServerObject, nodeClient)
+			log.Printf("Can not send %v to %v", iso, nodeClient)
 			//return unprocessed message back to application
 			d.EventBus.Publish(d.unprocessedChannelName, event.Data)
 		}

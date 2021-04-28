@@ -7,8 +7,9 @@ import (
 
 func NewIsoFromCloudObject(cloudObj *cloud.CloudObject) *nodes.ISO {
 	return &nodes.ISO{
-		CloudObj: cloudObj,
-		Metadata: &nodes.IsoMeta{},
+		CloudObj:           cloudObj,
+		Metadata:           &nodes.IsoMeta{},
+		TransferredByNodes: map[string]int64{},
 	}
 }
 

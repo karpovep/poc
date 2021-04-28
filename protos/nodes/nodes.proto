@@ -19,6 +19,8 @@ message IsoMeta {
 message ISO {
     protos.cloud.CloudObject cloudObj = 1;
     IsoMeta metadata = 2;
+    //nodeId to timestamp map when the object was transferred from the node
+    map<string, int64> transferredByNodes = 3;
 }
 
 message Acknowledge {

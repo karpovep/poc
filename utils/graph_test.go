@@ -52,7 +52,7 @@ func Test_ShouldMergeTwoGraphs(t *testing.T) {
 	graphToMerge := NewGraph()
 	graphToMerge.AddNode(n1)
 	graphToMerge.AddNode(n2)
-	graph.AddEdge(n1, n2)
+	graphToMerge.AddEdge(n1, n2)
 
 	// When
 	graph.MergeGraph(graphToMerge)
