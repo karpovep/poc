@@ -3,6 +3,7 @@ package config
 import (
 	"github.com/ilyakaznacheev/cleanenv"
 	"log"
+	"poc/model"
 )
 
 type (
@@ -20,6 +21,10 @@ type (
 		Keyspace string
 	}
 
+	RepositoryConfig struct {
+		Type model.RepositoryType `yaml:"type" env:"REPOSITORY_TYPE" env-default:"cassandra"`
+	}
+
 	ClientConfig struct {
 		ServerAddress string `yaml:"serverAddress" env:"SERVER_ADDRESS" env-default:"localhost:50051"`
 	}
@@ -29,6 +34,7 @@ type (
 		Server     ServerConfig
 		NodeServer NodeServerConfig `yaml:"nodeServer"`
 		Client     ClientConfig
+		Repository RepositoryConfig `yaml:"repository"`
 		Cassandra  CassandraConfig
 	}
 )

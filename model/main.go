@@ -5,6 +5,8 @@ import (
 	"poc/protos/nodes"
 )
 
+type RepositoryType string
+
 func NewIsoFromCloudObject(cloudObj *cloud.CloudObject) *nodes.ISO {
 	return &nodes.ISO{
 		CloudObj:           cloudObj,
@@ -21,4 +23,6 @@ const (
 	RETRY_CHANNEL_NAME       string = "retry"
 	CACHED_CHANNEL_NAME      string = "cached"
 	PROCESSED_CHANNEL_NAME   string = "processed"
+
+	CASSANDRA_REPOSITORY_TYPE RepositoryType = "cassandra"
 )

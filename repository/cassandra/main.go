@@ -1,4 +1,4 @@
-package repository
+package cassandra
 
 import (
 	"bytes"
@@ -7,22 +7,23 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 	"log"
 	"poc/app"
+	"poc/config"
 	"poc/model"
 	"poc/protos/cloud"
 	"poc/protos/nodes"
+	"poc/repository/impls"
 	"text/template"
 )
 
 type (
 	ICassandraRepository interface {
-		IRepository
+		impls.IRepositoryImpl
 		CreateTable(params *CreateTableQueryParams) error
-		SaveInternalServerObject(obj *nodes.ISO) error
 		FindByTypeAndId(objType string, id string) (*nodes.ISO, error)
 	}
 
 	CassandraRepository struct {
-		*Repository
+		config  *config.CloudConfig
 		cluster *gocql.ClusterConfig
 		session *gocql.Session
 	}
@@ -50,8 +51,9 @@ const createTableQueryTemplate = "" +
 const isoTable = "internal_server_object"
 
 func NewCassandraRepository(appContext app.IAppContext) ICassandraRepository {
+	cfg := appContext.Get("config").(*config.CloudConfig)
 	return &CassandraRepository{
-		Repository: NewRepository(appContext),
+		config: cfg,
 	}
 }
 
@@ -69,17 +71,11 @@ func (r *CassandraRepository) CreateTable(params *CreateTableQueryParams) error 
 }
 
 func (r *CassandraRepository) SaveInternalServerObject(iso *nodes.ISO) error {
-	session, err := r.cluster.CreateSession()
-	if err != nil {
-		return err
-	}
-	defer session.Close()
-
 	partitionKey, err := r.extractPartitionKey(iso.CloudObj.Id)
 	if err != nil {
 		return err
 	}
-	if err := session.Query(`INSERT INTO internal_server_object (partition_key, type, id, cloud_object) VALUES (?, ?, ?, ?)`,
+	if err := r.session.Query(`INSERT INTO internal_server_object (partition_key, type, id, cloud_object) VALUES (?, ?, ?, ?)`,
 		partitionKey, iso.CloudObj.Entity.TypeUrl, iso.CloudObj.Id, iso.CloudObj.Entity.Value).Exec(); err != nil {
 		return err
 	}
@@ -141,28 +137,15 @@ func (r *CassandraRepository) Start() {
 			{"partition_key", "VARCHAR"},
 			{"type", "VARCHAR"},
 			{"id", "TIMEUUID"},
+			{"metadata", "BLOB"},
 			{"cloud_object", "BLOB"},
 		},
 	})
 	if err != nil {
 		log.Fatalln("cannot create table:", isoTable, err)
 	}
-	go r.setupIncomingHandler()
-	r.EventBus.Subscribe(r.inboundChannelName, r.inboundRepoChan)
 }
 
 func (r *CassandraRepository) Stop() {
-	r.EventBus.Unsubscribe(r.inboundChannelName, r.inboundRepoChan)
 	r.session.Close()
-}
-
-func (r *CassandraRepository) setupIncomingHandler() {
-	for evnt := range r.inboundRepoChan {
-		internalServerObject := evnt.Data.(*nodes.ISO)
-		err := r.SaveInternalServerObject(internalServerObject)
-		//todo handle errors
-		if err != nil {
-			log.Fatalln("SaveInternalServerObject error", err)
-		}
-	}
 }

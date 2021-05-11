@@ -78,9 +78,9 @@ func main() {
 	subscriptionManager := subscriptions.NewSubscriptionManager(appContext)
 	appContext.Set("subscriptionManager", subscriptionManager)
 
-	cassandraRepository := repository.NewCassandraRepository(appContext)
-	appContext.Set("cassandraRepository", cassandraRepository)
-	cassandraRepository.Start()
+	repo := repository.NewRepository(appContext)
+	appContext.Set("repository", repo)
+	repo.Start()
 
 	nodeServer := nodes.NewNodeServer(appContext)
 	nodeServer.Start()

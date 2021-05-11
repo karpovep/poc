@@ -5,6 +5,8 @@ server:
   port: :50052
   nodes:
     - localhost:40043
+repository:
+  type: cassandra
 cassandra:
   hosts:
     - localhost

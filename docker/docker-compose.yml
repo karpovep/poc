@@ -4,7 +4,7 @@ services:
   app:
     build:
       context: ..
-      dockerfile: app/Dockerfile
+      dockerfile: docker/app/Dockerfile
     hostname: dpc_app
     environment:
       NODE_ENV: dev

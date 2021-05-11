@@ -1,4 +1,4 @@
-package repository
+package cassandra
 
 import (
 	"github.com/gocql/gocql"
@@ -7,8 +7,6 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	"poc/app/app_mock"
-	"poc/bus"
-	"poc/bus/bus_mock"
 	"poc/config"
 	"poc/model"
 	"poc/protos/cloud"
@@ -19,9 +17,6 @@ func Test_ShouldConnectToCassandraClusterAndCreateTable(t *testing.T) {
 	// Given
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-
-	inboundChannelName := "inbound.test"
-	inboundRepoChan := make(bus.DataChannel)
 
 	keyspace := "cloud"
 	createTableQueryParams := &CreateTableQueryParams{
@@ -44,17 +39,12 @@ func Test_ShouldConnectToCassandraClusterAndCreateTable(t *testing.T) {
 		},
 	}
 
-	mockEventBus := bus_mock.NewMockIEventBus(mockCtrl)
-	mockEventBus.EXPECT().Subscribe(inboundChannelName, inboundRepoChan)
-
 	mockAppContext := app_mock.NewMockIAppContext(mockCtrl)
-	mockAppContext.EXPECT().Get("eventBus").Return(mockEventBus)
 	mockAppContext.EXPECT().Get("config").Return(cfg)
-	mockAppContext.EXPECT().Get("inboundRepoChan").Return(inboundRepoChan)
-	mockAppContext.EXPECT().Get(model.INBOUND_CHANNEL_NAME).Return(inboundChannelName)
 
 	cassandraRepo := NewCassandraRepository(mockAppContext)
 	cassandraRepo.Start()
+	defer cassandraRepo.Stop()
 
 	// When
 	err := cassandraRepo.CreateTable(createTableQueryParams)
@@ -67,9 +57,6 @@ func Test_ShouldSaveInternalServerObjectAndFindITByTypeAndId(t *testing.T) {
 	// Given
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-
-	inboundChannelName := "inbound.test"
-	inboundRepoChan := make(bus.DataChannel)
 
 	entity := &cloud.TestEntity{Name: "My Test Entity"}
 	entityType := string(entity.ProtoReflect().Descriptor().FullName())
@@ -90,14 +77,8 @@ func Test_ShouldSaveInternalServerObjectAndFindITByTypeAndId(t *testing.T) {
 		},
 	}
 
-	mockEventBus := bus_mock.NewMockIEventBus(mockCtrl)
-	mockEventBus.EXPECT().Subscribe(inboundChannelName, inboundRepoChan)
-
 	mockAppContext := app_mock.NewMockIAppContext(mockCtrl)
-	mockAppContext.EXPECT().Get("eventBus").Return(mockEventBus)
 	mockAppContext.EXPECT().Get("config").Return(cfg)
-	mockAppContext.EXPECT().Get("inboundRepoChan").Return(inboundRepoChan)
-	mockAppContext.EXPECT().Get(model.INBOUND_CHANNEL_NAME).Return(inboundChannelName)
 
 	cassandraRepo := NewCassandraRepository(mockAppContext)
 	cassandraRepo.Start()
