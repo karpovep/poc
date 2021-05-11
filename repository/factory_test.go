@@ -23,7 +23,11 @@ func TestRepositoryFactory(t *testing.T) {
 				defer mockCtrl.Finish()
 				repositoryType := model.CASSANDRA_REPOSITORY_TYPE
 
-				cfg := &config.CloudConfig{}
+				cfg := &config.CloudConfig{
+					Cassandra: config.CassandraConfig{
+						TemplatesRoot: "cassandra/queries/templates",
+					},
+				}
 
 				mockAppContext := app_mock.NewMockIAppContext(mockCtrl)
 				mockAppContext.EXPECT().Get("config").Return(cfg)

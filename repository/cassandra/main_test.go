@@ -10,6 +10,7 @@ import (
 	"poc/config"
 	"poc/model"
 	"poc/protos/cloud"
+	"poc/repository/cassandra/queries"
 	"testing"
 )
 
@@ -19,7 +20,7 @@ func Test_ShouldConnectToCassandraClusterAndCreateTable(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	keyspace := "cloud"
-	createTableQueryParams := &CreateTableQueryParams{
+	createTableQueryParams := &queries.CreateTableQueryParams{
 		Keyspace:   keyspace,
 		Table:      "test_table",
 		PrimaryKey: "id",
@@ -34,8 +35,9 @@ func Test_ShouldConnectToCassandraClusterAndCreateTable(t *testing.T) {
 
 	cfg := &config.CloudConfig{
 		Cassandra: config.CassandraConfig{
-			Hosts:    []string{"localhost"},
-			Keyspace: keyspace,
+			Hosts:         []string{"localhost"},
+			Keyspace:      keyspace,
+			TemplatesRoot: "queries/templates",
 		},
 	}
 
@@ -69,11 +71,13 @@ func Test_ShouldSaveInternalServerObjectAndFindITByTypeAndId(t *testing.T) {
 		Entity: &anypb.Any{TypeUrl: entityType, Value: serialized},
 	}
 	internalServerObject := model.NewIsoFromCloudObject(cloudObj)
+	internalServerObject.Metadata.InitialNodeId = "test-node-1"
 
 	cfg := &config.CloudConfig{
 		Cassandra: config.CassandraConfig{
-			Hosts:    []string{"localhost"},
-			Keyspace: "cloud",
+			Hosts:         []string{"localhost"},
+			Keyspace:      "cloud",
+			TemplatesRoot: "queries/templates",
 		},
 	}
 
@@ -101,4 +105,5 @@ func Test_ShouldSaveInternalServerObjectAndFindITByTypeAndId(t *testing.T) {
 		t.Fatalf("Could not unmarshal TestEntity from the field: %s", err)
 	}
 	assert.Equal(t, entity.Name, actualEntity.Name, "after decoding: Name is not identical in saved and retrieved entities")
+	assert.Equal(t, internalServerObject.Metadata.InitialNodeId, actualObj.Metadata.InitialNodeId, "encoded saved and retrieved Metadata.InitialNodeId is not identical")
 }

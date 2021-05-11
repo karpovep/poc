@@ -15,6 +15,14 @@ func NewIsoFromCloudObject(cloudObj *cloud.CloudObject) *nodes.ISO {
 	}
 }
 
+func NewIsoFromCloudObjectAndMeta(cloudObj *cloud.CloudObject, meta *nodes.IsoMeta) *nodes.ISO {
+	return &nodes.ISO{
+		CloudObj:           cloudObj,
+		Metadata:           meta,
+		TransferredByNodes: map[string]int64{},
+	}
+}
+
 const (
 	INBOUND_CHANNEL_NAME     string = "inbound"
 	TRANSFER_CHANNEL_NAME    string = "transfer"

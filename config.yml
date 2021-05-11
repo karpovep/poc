@@ -11,5 +11,6 @@ cassandra:
   hosts:
     - localhost
   keyspace: cloud
+  templatesRoot: repository/cassandra/queries/templates
 client:
   serverAddress: localhost:50052

@@ -1,9 +1,9 @@
 package cassandra
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/gocql/gocql"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	"log"
 	"poc/app"
@@ -11,14 +11,14 @@ import (
 	"poc/model"
 	"poc/protos/cloud"
 	"poc/protos/nodes"
+	"poc/repository/cassandra/queries"
 	"poc/repository/impls"
-	"text/template"
 )
 
 type (
 	ICassandraRepository interface {
 		impls.IRepositoryImpl
-		CreateTable(params *CreateTableQueryParams) error
+		CreateTable(params *queries.CreateTableQueryParams) error
 		FindByTypeAndId(objType string, id string) (*nodes.ISO, error)
 	}
 
@@ -26,48 +26,22 @@ type (
 		config  *config.CloudConfig
 		cluster *gocql.ClusterConfig
 		session *gocql.Session
-	}
-
-	CreateTableQueryParams struct {
-		Keyspace   string
-		Table      string
-		PrimaryKey string
-		Fields     []struct {
-			Name string
-			Type string
-		}
+		queries *queries.Queries
 	}
 )
-
-const createTableQueryTemplate = "" +
-	"create table if not exists {{ .Keyspace }}.{{ .Table }} " +
-	"(" +
-	"{{ range .Fields }}" +
-	"{{ .Name }} {{ .Type }}," +
-	"{{ end }}" +
-	"PRIMARY KEY ({{ .PrimaryKey }})" +
-	");"
 
 const isoTable = "internal_server_object"
 
 func NewCassandraRepository(appContext app.IAppContext) ICassandraRepository {
 	cfg := appContext.Get("config").(*config.CloudConfig)
 	return &CassandraRepository{
-		config: cfg,
+		config:  cfg,
+		queries: queries.NewQueries(cfg.Cassandra.TemplatesRoot),
 	}
 }
 
-func (r *CassandraRepository) CreateTable(params *CreateTableQueryParams) error {
-	tmlpt, err := template.New("createTableQueryTemplate").Parse(createTableQueryTemplate)
-	if err != nil {
-		return err
-	}
-	createTableQuery := &bytes.Buffer{}
-	err = tmlpt.Execute(createTableQuery, params)
-	if err != nil {
-		return err
-	}
-	return r.session.Query(createTableQuery.String()).Exec()
+func (r *CassandraRepository) CreateTable(params *queries.CreateTableQueryParams) error {
+	return r.session.Query(r.queries.CreateTableQuery(params)).Exec()
 }
 
 func (r *CassandraRepository) SaveInternalServerObject(iso *nodes.ISO) error {
@@ -75,8 +49,18 @@ func (r *CassandraRepository) SaveInternalServerObject(iso *nodes.ISO) error {
 	if err != nil {
 		return err
 	}
-	if err := r.session.Query(`INSERT INTO internal_server_object (partition_key, type, id, cloud_object) VALUES (?, ?, ?, ?)`,
-		partitionKey, iso.CloudObj.Entity.TypeUrl, iso.CloudObj.Id, iso.CloudObj.Entity.Value).Exec(); err != nil {
+	query, err := r.queries.InsertQuery(&queries.InsertQueryParams{
+		Table:  isoTable,
+		Fields: []string{"partition_key", "type", "id", "cloud_object", "metadata"},
+	})
+	if err != nil {
+		return err
+	}
+	serializedMetadata, err := proto.Marshal(iso.Metadata)
+	if err != nil {
+		return err
+	}
+	if err := r.session.Query(query, partitionKey, iso.CloudObj.Entity.TypeUrl, iso.CloudObj.Id, iso.CloudObj.Entity.Value, serializedMetadata).Exec(); err != nil {
 		return err
 	}
 	return nil
@@ -88,16 +72,30 @@ func (r *CassandraRepository) FindByTypeAndId(objType string, id string) (*nodes
 		return nil, err
 	}
 
+	query, err := r.queries.SelectQuery(&queries.SelectQueryParams{
+		Table:       isoTable,
+		Fields:      []string{"cloud_object", "metadata"},
+		WhereClause: "partition_key = ? AND type = ? AND id = ?",
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	var cloudObject []byte
-	if err := r.session.Query(`SELECT cloud_object FROM internal_server_object WHERE partition_key = ? AND type = ? AND id = ?`,
-		partitionKey, objType, id).Consistency(gocql.One).Scan(&cloudObject); err != nil {
+	var metadata []byte
+	if err := r.session.Query(query, partitionKey, objType, id).Consistency(gocql.One).Scan(&cloudObject, &metadata); err != nil {
 		log.Fatal(err)
 	}
 
-	return model.NewIsoFromCloudObject(&cloud.CloudObject{
+	var isoMeta nodes.IsoMeta
+	if err := proto.Unmarshal(metadata, &isoMeta); err != nil {
+		log.Fatalf("Could not unmarshal metadata from db: %s", err)
+	}
+
+	return model.NewIsoFromCloudObjectAndMeta(&cloud.CloudObject{
 		Id:     id,
 		Entity: &anypb.Any{TypeUrl: objType, Value: cloudObject},
-	}), nil
+	}, &isoMeta), nil
 }
 
 func (r *CassandraRepository) extractPartitionKey(id string) (string, error) {
@@ -126,7 +124,7 @@ func (r *CassandraRepository) Start() {
 	r.session = session
 
 	// ensure table is created
-	err = r.CreateTable(&CreateTableQueryParams{
+	err = r.CreateTable(&queries.CreateTableQueryParams{
 		Keyspace:   r.cluster.Keyspace,
 		Table:      isoTable,
 		PrimaryKey: "(partition_key), type, id",

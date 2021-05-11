@@ -17,8 +17,9 @@ type (
 	}
 
 	CassandraConfig struct {
-		Hosts    []string
-		Keyspace string
+		Hosts         []string
+		Keyspace      string
+		TemplatesRoot string `yaml:"templatesRoot"`
 	}
 
 	RepositoryConfig struct {

@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS {{ .Keyspace }}.{{ .Table }}
+(
+    {{ range .Fields }}{{ .Name }} {{ .Type }},{{ end }}
+    PRIMARY KEY ({{ .PrimaryKey }})
+);

@@ -1,0 +1,1 @@
+SELECT {{ StringsJoin .Fields ", " }} FROM {{ .Table }} WHERE {{ .WhereClause }};

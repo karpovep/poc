@@ -1,0 +1,1 @@
+INSERT INTO {{ .Table }} ({{ StringsJoin .Fields ", " }}) VALUES ({{$length := len .Fields}}{{$subLength := Sum $length -1}}{{ StringsRepeat "?, " $subLength}}?);
