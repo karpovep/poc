@@ -92,12 +92,16 @@ func (sm *SubscriptionManager) UnregisterSubscription(objectType string, subId s
 
 func (sm *SubscriptionManager) setupIncomingHandler() {
 	for evnt := range sm.inboundChan {
-		internalServerObject := evnt.Data.(*nodes.ISO)
-		processed := sm.processObject(internalServerObject)
+		iso := evnt.Data.(*nodes.ISO)
+		if iso.CloudObj.IsFinal {
+			// skip object if it is final
+			continue
+		}
+		processed := sm.processObject(iso)
 		if !processed {
-			sm.EventBus.Publish(sm.outboundChannelName, internalServerObject)
+			sm.EventBus.Publish(sm.outboundChannelName, iso)
 		} else {
-			sm.EventBus.Publish(sm.processedChannelName, internalServerObject)
+			sm.EventBus.Publish(sm.processedChannelName, iso)
 		}
 	}
 }

@@ -58,10 +58,10 @@ func (r *Repository) Start() {
 func (r *Repository) setupIncomingHandler() {
 	for evnt := range r.inboundRepoChan {
 		internalServerObject := evnt.Data.(*nodes.ISO)
-		err := r.Impl.SaveInternalServerObject(internalServerObject)
+		err := r.Impl.SaveIso(internalServerObject)
 		//todo handle errors
 		if err != nil {
-			log.Fatalln("SaveInternalServerObject error", err)
+			log.Fatalln("SaveIso error", err)
 		}
 	}
 }

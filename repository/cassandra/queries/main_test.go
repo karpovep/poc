@@ -10,7 +10,7 @@ func Test_ShouldInitTemplates(t *testing.T) {
 	queries := NewQueries("templates/")
 
 	// Then
-	assert.Equal(t, 3, len(queries.templates.Templates()), "unexpected number of templates were initialised")
+	assert.Equal(t, 4, len(queries.templates.Templates()), "unexpected number of templates were initialised")
 }
 
 func Test_ShouldExecuteCreateTableTemplate(t *testing.T) {
@@ -35,9 +35,9 @@ func Test_ShouldExecuteCreateTableTemplate(t *testing.T) {
 	queries := NewQueries("templates/")
 
 	// When
-	actualQuery, err := queries.CreateTableQuery(params)
+	actualQuery, err := queries.CreateTable(params)
 	if err != nil {
-		t.Fatal("CreateTableQuery error", err)
+		t.Fatal("CreateTable error", err)
 	}
 
 	// Then
@@ -57,9 +57,9 @@ func Test_ShouldExecuteInsertTemplate(t *testing.T) {
 	queries := NewQueries("templates/")
 
 	// When
-	actualQuery, err := queries.InsertQuery(params)
+	actualQuery, err := queries.Insert(params)
 	if err != nil {
-		t.Fatal("CreateTableQuery error", err)
+		t.Fatal("Insert error", err)
 	}
 
 	// Then
@@ -79,9 +79,28 @@ func Test_ShouldExecuteSelectTemplate(t *testing.T) {
 	queries := NewQueries("templates/")
 
 	// When
-	actualQuery, err := queries.SelectQuery(params)
+	actualQuery, err := queries.Select(params)
 	if err != nil {
-		t.Fatal("CreateTableQuery error", err)
+		t.Fatal("Select error", err)
+	}
+
+	// Then
+	assert.Equal(t, expectedQuery, actualQuery, "unexpected query received")
+}
+
+func Test_ShouldExecuteDeleteTemplate(t *testing.T) {
+	// Given
+	params := &DeleteQueryParams{
+		Table:       "test_table",
+		WhereClause: "p_key > 0",
+	}
+	expectedQuery := "DELETE FROM test_table WHERE p_key > 0 IF EXISTS;"
+	queries := NewQueries("templates/")
+
+	// When
+	actualQuery, err := queries.Delete(params)
+	if err != nil {
+		t.Fatal("Delete error", err)
 	}
 
 	// Then

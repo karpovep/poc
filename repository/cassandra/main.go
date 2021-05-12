@@ -30,7 +30,8 @@ type (
 	}
 )
 
-const isoTable = "internal_server_object"
+const isoTable = "iso"
+const activeIsoTable = "active_iso"
 
 func NewCassandraRepository(appContext app.IAppContext) ICassandraRepository {
 	cfg := appContext.Get("config").(*config.CloudConfig)
@@ -41,18 +42,11 @@ func NewCassandraRepository(appContext app.IAppContext) ICassandraRepository {
 }
 
 func (r *CassandraRepository) CreateTable(params *queries.CreateTableQueryParams) error {
-	return r.session.Query(r.queries.CreateTableQuery(params)).Exec()
+	return r.session.Query(r.queries.CreateTable(params)).Exec()
 }
 
-func (r *CassandraRepository) SaveInternalServerObject(iso *nodes.ISO) error {
+func (r *CassandraRepository) SaveIso(iso *nodes.ISO) error {
 	partitionKey, err := r.extractPartitionKey(iso.CloudObj.Id)
-	if err != nil {
-		return err
-	}
-	query, err := r.queries.InsertQuery(&queries.InsertQueryParams{
-		Table:  isoTable,
-		Fields: []string{"partition_key", "type", "id", "cloud_object", "metadata"},
-	})
 	if err != nil {
 		return err
 	}
@@ -60,9 +54,44 @@ func (r *CassandraRepository) SaveInternalServerObject(iso *nodes.ISO) error {
 	if err != nil {
 		return err
 	}
-	if err := r.session.Query(query, partitionKey, iso.CloudObj.Entity.TypeUrl, iso.CloudObj.Id, iso.CloudObj.Entity.Value, serializedMetadata).Exec(); err != nil {
+	insertIsoQuery, err := r.queries.Insert(&queries.InsertQueryParams{
+		Table:  isoTable,
+		Fields: []string{"partition_key", "type", "id", "cloud_object", "metadata", "is_final"},
+	})
+	if err != nil {
 		return err
 	}
+	// upsert iso object
+	if err = r.session.Query(insertIsoQuery, partitionKey, iso.CloudObj.Entity.TypeUrl, iso.CloudObj.Id, iso.CloudObj.Entity.Value, serializedMetadata, iso.CloudObj.IsFinal).Exec(); err != nil {
+		return err
+	}
+
+	if iso.CloudObj.IsFinal {
+		// if object is final - delete active_iso record
+		deleteActiveIsoQuery, err := r.queries.Delete(&queries.DeleteQueryParams{
+			Table:       activeIsoTable,
+			WhereClause: "node_id = ? AND type = ? AND id = ?",
+		})
+		if err != nil {
+			return err
+		}
+		if err = r.session.Query(deleteActiveIsoQuery, r.config.NodeId, iso.CloudObj.Entity.TypeUrl, iso.CloudObj.Id).Exec(); err != nil {
+			return err
+		}
+	} else {
+		// otherwise - upsert active_iso record
+		insertActiveIsoQuery, err := r.queries.Insert(&queries.InsertQueryParams{
+			Table:  activeIsoTable,
+			Fields: []string{"node_id", "type", "id", "cloud_object", "metadata"},
+		})
+		if err != nil {
+			return err
+		}
+		if err = r.session.Query(insertActiveIsoQuery, r.config.NodeId, iso.CloudObj.Entity.TypeUrl, iso.CloudObj.Id, iso.CloudObj.Entity.Value, serializedMetadata).Exec(); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -72,9 +101,9 @@ func (r *CassandraRepository) FindByTypeAndId(objType string, id string) (*nodes
 		return nil, err
 	}
 
-	query, err := r.queries.SelectQuery(&queries.SelectQueryParams{
+	query, err := r.queries.Select(&queries.SelectQueryParams{
 		Table:       isoTable,
-		Fields:      []string{"cloud_object", "metadata"},
+		Fields:      []string{"cloud_object", "metadata", "is_final"},
 		WhereClause: "partition_key = ? AND type = ? AND id = ?",
 	})
 	if err != nil {
@@ -83,7 +112,8 @@ func (r *CassandraRepository) FindByTypeAndId(objType string, id string) (*nodes
 
 	var cloudObject []byte
 	var metadata []byte
-	if err := r.session.Query(query, partitionKey, objType, id).Consistency(gocql.One).Scan(&cloudObject, &metadata); err != nil {
+	var isFinal bool
+	if err := r.session.Query(query, partitionKey, objType, id).Consistency(gocql.One).Scan(&cloudObject, &metadata, &isFinal); err != nil {
 		log.Fatal(err)
 	}
 
@@ -93,8 +123,9 @@ func (r *CassandraRepository) FindByTypeAndId(objType string, id string) (*nodes
 	}
 
 	return model.NewIsoFromCloudObjectAndMeta(&cloud.CloudObject{
-		Id:     id,
-		Entity: &anypb.Any{TypeUrl: objType, Value: cloudObject},
+		Id:      id,
+		Entity:  &anypb.Any{TypeUrl: objType, Value: cloudObject},
+		IsFinal: isFinal,
 	}, &isoMeta), nil
 }
 
@@ -123,7 +154,7 @@ func (r *CassandraRepository) Start() {
 	}
 	r.session = session
 
-	// ensure table is created
+	// ensure tables are exists
 	err = r.CreateTable(&queries.CreateTableQueryParams{
 		Keyspace:   r.cluster.Keyspace,
 		Table:      isoTable,
@@ -137,10 +168,30 @@ func (r *CassandraRepository) Start() {
 			{"id", "TIMEUUID"},
 			{"metadata", "BLOB"},
 			{"cloud_object", "BLOB"},
+			{"is_final", "BOOLEAN"},
 		},
 	})
 	if err != nil {
 		log.Fatalln("cannot create table:", isoTable, err)
+	}
+
+	err = r.CreateTable(&queries.CreateTableQueryParams{
+		Keyspace:   r.cluster.Keyspace,
+		Table:      activeIsoTable,
+		PrimaryKey: "(node_id), type, id",
+		Fields: []struct {
+			Name string
+			Type string
+		}{
+			{"node_id", "VARCHAR"},
+			{"type", "VARCHAR"},
+			{"id", "TIMEUUID"},
+			{"metadata", "BLOB"},
+			{"cloud_object", "BLOB"},
+		},
+	})
+	if err != nil {
+		log.Fatalln("cannot create table:", activeIsoTable, err)
 	}
 }
 

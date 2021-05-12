@@ -28,6 +28,11 @@ type (
 		WhereClause string
 	}
 
+	DeleteQueryParams struct {
+		Table       string
+		WhereClause string
+	}
+
 	Queries struct {
 		templates *template.Template
 	}
@@ -37,6 +42,7 @@ const (
 	CREATE_TABLE_QUERY_TEMPLATE_NAME string = "create_table.gotmpl"
 	INSERT_QUERY_TEMPLATE_NAME       string = "insert.gotmpl"
 	SELECT_QUERY_TEMPLATE_NAME       string = "select.gotmpl"
+	DELETE_QUERY_TEMPLATE_NAME       string = "delete.gotmpl"
 )
 
 func NewQueries(templatesRoot string) *Queries {
@@ -51,6 +57,7 @@ func NewQueries(templatesRoot string) *Queries {
 			templatesRoot+"/"+CREATE_TABLE_QUERY_TEMPLATE_NAME,
 			templatesRoot+"/"+INSERT_QUERY_TEMPLATE_NAME,
 			templatesRoot+"/"+SELECT_QUERY_TEMPLATE_NAME,
+			templatesRoot+"/"+DELETE_QUERY_TEMPLATE_NAME,
 		)),
 	}
 }
@@ -65,14 +72,18 @@ func (q *Queries) query(templateName string, params interface{}) (string, error)
 
 }
 
-func (q *Queries) CreateTableQuery(params *CreateTableQueryParams) (string, error) {
+func (q *Queries) CreateTable(params *CreateTableQueryParams) (string, error) {
 	return q.query(CREATE_TABLE_QUERY_TEMPLATE_NAME, params)
 }
 
-func (q *Queries) InsertQuery(params *InsertQueryParams) (string, error) {
+func (q *Queries) Insert(params *InsertQueryParams) (string, error) {
 	return q.query(INSERT_QUERY_TEMPLATE_NAME, params)
 }
 
-func (q *Queries) SelectQuery(params *SelectQueryParams) (string, error) {
+func (q *Queries) Select(params *SelectQueryParams) (string, error) {
 	return q.query(SELECT_QUERY_TEMPLATE_NAME, params)
+}
+
+func (q *Queries) Delete(params *DeleteQueryParams) (string, error) {
+	return q.query(DELETE_QUERY_TEMPLATE_NAME, params)
 }

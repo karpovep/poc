@@ -8,6 +8,6 @@ type (
 	IRepositoryImpl interface {
 		Start()
 		Stop()
-		SaveInternalServerObject(obj *nodes.ISO) error
+		SaveIso(obj *nodes.ISO) error
 	}
 )
