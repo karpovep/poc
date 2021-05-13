@@ -80,6 +80,7 @@ Each Node should implement the following functionality:
 
 ### Diagrams
 - [Basic Architecture View](https://drive.google.com/file/d/1ukPn3U78vHxhr7BJNcWFetokQS_1pMXa/view)
+- [Extended Architecture View](https://drive.google.com/file/d/19LZA7OQOqZsdbaSn_DBRHamlHOKsgZvG/view)
 - [Server Node Components](https://drive.google.com/file/d/1JG-yAHjmxeNS6PgxwnjE62t4KoFMdgH5/view)
 - [Basic Sequence Diagram](https://drive.google.com/file/d/1AGZXQFtNuUlxJsOziDhPfv7i8YBmQfeR/view)
 - [Data Structures](https://drive.google.com/file/d/1juhmjO4wt3YYu_EDF68281vRpm4O9MzJ/view)
