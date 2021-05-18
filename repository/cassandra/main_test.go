@@ -1,6 +1,7 @@
 package cassandra
 
 import (
+	"fmt"
 	"github.com/gocql/gocql"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -55,7 +56,7 @@ func Test_ShouldConnectToCassandraClusterAndCreateTable(t *testing.T) {
 	}
 }
 
-func Test_ShouldSaveNotFinalIsoAndFindITByTypeAndId(t *testing.T) {
+func Test_ShouldSaveNotFinalIsoAndFindItByTypeAndId(t *testing.T) {
 	// Given
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -93,7 +94,7 @@ func Test_ShouldSaveNotFinalIsoAndFindITByTypeAndId(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	actualObj, err := cassandraRepo.FindByTypeAndId(entityType, cloudObj.Id)
+	actualObj, err := cassandraRepo.FindIsoByTypeAndId(entityType, cloudObj.Id)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,7 +110,7 @@ func Test_ShouldSaveNotFinalIsoAndFindITByTypeAndId(t *testing.T) {
 	assert.Equal(t, internalServerObject.Metadata.InitialNodeId, actualObj.Metadata.InitialNodeId, "encoded saved and retrieved Metadata.InitialNodeId is not identical")
 }
 
-func Test_ShouldSaveFinalIsoAndFindITByTypeAndId(t *testing.T) {
+func Test_ShouldSaveFinalIsoAndFindItByTypeAndId(t *testing.T) {
 	// Given
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -148,7 +149,7 @@ func Test_ShouldSaveFinalIsoAndFindITByTypeAndId(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	actualObj, err := cassandraRepo.FindByTypeAndId(entityType, cloudObj.Id)
+	actualObj, err := cassandraRepo.FindIsoByTypeAndId(entityType, cloudObj.Id)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -162,4 +163,35 @@ func Test_ShouldSaveFinalIsoAndFindITByTypeAndId(t *testing.T) {
 	}
 	assert.Equal(t, entity.Name, actualEntity.Name, "after decoding: Name is not identical in saved and retrieved entities")
 	assert.Equal(t, internalServerObject.Metadata.InitialNodeId, actualObj.Metadata.InitialNodeId, "encoded saved and retrieved Metadata.InitialNodeId is not identical")
+}
+
+func Test_ShouldList(t *testing.T) {
+	// Given
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	cfg := &config.CloudConfig{
+		NodeId: "test-node-1",
+		Cassandra: config.CassandraConfig{
+			Hosts:         []string{"localhost"},
+			Keyspace:      "cloud",
+			TemplatesRoot: "queries/templates",
+		},
+	}
+
+	mockAppContext := app_mock.NewMockIAppContext(mockCtrl)
+	mockAppContext.EXPECT().Get("config").Return(cfg)
+
+	cassandraRepo := NewCassandraRepository(mockAppContext)
+	cassandraRepo.Start()
+
+	// When
+	activeIsos, nextPage, err := cassandraRepo.ListActiveIso(cfg.NodeId, 2, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Then
+	fmt.Println(activeIsos)
+	fmt.Println(nextPage)
 }

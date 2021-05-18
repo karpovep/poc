@@ -54,7 +54,7 @@ func (d *Daemon) startEventHandler() {
 		err := nodeClient.Transfer(iso)
 
 		if err != nil {
-			log.Printf("Can not send %v to %v", iso, nodeClient)
+			log.Printf("Can not send %v to %v, err = %v", iso, nodeClient, err)
 			//return unprocessed message back to application
 			d.EventBus.Publish(d.unprocessedChannelName, event.Data)
 		}

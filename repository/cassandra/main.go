@@ -19,7 +19,6 @@ type (
 	ICassandraRepository interface {
 		impls.IRepositoryImpl
 		CreateTable(params *queries.CreateTableQueryParams) error
-		FindByTypeAndId(objType string, id string) (*nodes.ISO, error)
 	}
 
 	CassandraRepository struct {
@@ -45,6 +44,17 @@ func (r *CassandraRepository) CreateTable(params *queries.CreateTableQueryParams
 	return r.session.Query(r.queries.CreateTable(params)).Exec()
 }
 
+func (r *CassandraRepository) DeleteActiveIso(iso *nodes.ISO) error {
+	deleteActiveIsoQuery, err := r.queries.Delete(&queries.DeleteQueryParams{
+		Table:       activeIsoTable,
+		WhereClause: "node_id = ? AND type = ? AND id = ?",
+	})
+	if err != nil {
+		return err
+	}
+	return r.session.Query(deleteActiveIsoQuery, r.config.NodeId, iso.CloudObj.Entity.TypeUrl, iso.CloudObj.Id).Exec()
+}
+
 func (r *CassandraRepository) SaveIso(iso *nodes.ISO) error {
 	partitionKey, err := r.extractPartitionKey(iso.CloudObj.Id)
 	if err != nil {
@@ -68,14 +78,7 @@ func (r *CassandraRepository) SaveIso(iso *nodes.ISO) error {
 
 	if iso.CloudObj.IsFinal {
 		// if object is final - delete active_iso record
-		deleteActiveIsoQuery, err := r.queries.Delete(&queries.DeleteQueryParams{
-			Table:       activeIsoTable,
-			WhereClause: "node_id = ? AND type = ? AND id = ?",
-		})
-		if err != nil {
-			return err
-		}
-		if err = r.session.Query(deleteActiveIsoQuery, r.config.NodeId, iso.CloudObj.Entity.TypeUrl, iso.CloudObj.Id).Exec(); err != nil {
+		if err = r.DeleteActiveIso(iso); err != nil {
 			return err
 		}
 	} else {
@@ -95,7 +98,7 @@ func (r *CassandraRepository) SaveIso(iso *nodes.ISO) error {
 	return nil
 }
 
-func (r *CassandraRepository) FindByTypeAndId(objType string, id string) (*nodes.ISO, error) {
+func (r *CassandraRepository) FindIsoByTypeAndId(objType string, id string) (*nodes.ISO, error) {
 	partitionKey, err := r.extractPartitionKey(id)
 	if err != nil {
 		return nil, err
@@ -135,6 +138,47 @@ func (r *CassandraRepository) extractPartitionKey(id string) (string, error) {
 		return "", err
 	}
 	return fmt.Sprintf("%d-%02d", timeuuid.Time().Year(), timeuuid.Time().Month()), nil
+}
+
+func (r *CassandraRepository) ListActiveIso(nodeId string, limit int, page []byte) ([]*nodes.ISO, []byte, error) {
+	query, err := r.queries.Select(&queries.SelectQueryParams{
+		Table:       activeIsoTable,
+		Fields:      []string{"type", "id", "metadata", "cloud_object"},
+		WhereClause: "node_id = ?",
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+
+	itr := r.session.Query(query, nodeId).PageSize(limit).PageState(page).Iter()
+	defer itr.Close()
+
+	// Set next page state.
+	nextPage := itr.PageState()
+
+	activeIsoList := make([]*nodes.ISO, 0, itr.NumRows())
+	scanner := itr.Scanner()
+	for scanner.Next() {
+		var metadata, cloudObject []byte
+		var objType, id string
+		if err := scanner.Scan(&objType, &id, &metadata, &cloudObject); err != nil {
+			return nil, nil, err
+		}
+
+		var isoMeta nodes.IsoMeta
+		if err := proto.Unmarshal(metadata, &isoMeta); err != nil {
+			return nil, nil, err
+		}
+
+		activeIsoList = append(activeIsoList, model.NewIsoFromCloudObjectAndMeta(&cloud.CloudObject{
+			Id:     id,
+			Entity: &anypb.Any{TypeUrl: objType, Value: cloudObject},
+		}, &isoMeta))
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, nil, err
+	}
+	return activeIsoList, nextPage, nil
 }
 
 func (r *CassandraRepository) Start() {
