@@ -30,7 +30,7 @@ type (
 		EventBus             bus.IEventBus
 		Utils                utils.IUtils
 		subscriptions        map[string]map[string]*Subscriber //[objectType][subscriptionId]*Subscriber
-		inboundChan          bus.DataChannel
+		managerChan          bus.DataChannel
 		mx                   sync.RWMutex
 		inboundChannelName   string
 		transferChannelName  string
@@ -43,7 +43,7 @@ type (
 func NewSubscriptionManager(appContext app.IAppContext) ISubscriptionManager {
 	eventBus := appContext.Get("eventBus").(bus.IEventBus)
 	utls := appContext.Get("utils").(utils.IUtils)
-	inboundChan := appContext.Get("inboundChan").(bus.DataChannel)
+	managerChan := eventBus.CreateDataChannel()
 	inboundChannelName := appContext.Get(model.INBOUND_CHANNEL_NAME).(string)
 	transferChannelName := appContext.Get(model.TRANSFER_CHANNEL_NAME).(string)
 	cachedChannelName := appContext.Get(model.CACHED_CHANNEL_NAME).(string)
@@ -53,7 +53,7 @@ func NewSubscriptionManager(appContext app.IAppContext) ISubscriptionManager {
 		EventBus:             eventBus,
 		Utils:                utls,
 		subscriptions:        make(map[string]map[string]*Subscriber),
-		inboundChan:          inboundChan,
+		managerChan:          managerChan,
 		inboundChannelName:   inboundChannelName,
 		transferChannelName:  transferChannelName,
 		cachedChannelName:    cachedChannelName,
@@ -61,9 +61,9 @@ func NewSubscriptionManager(appContext app.IAppContext) ISubscriptionManager {
 		processedChannelName: processedChannelName,
 	}
 	go sm.setupIncomingHandler()
-	sm.EventBus.Subscribe(inboundChannelName, inboundChan)
-	sm.EventBus.Subscribe(transferChannelName, inboundChan)
-	sm.EventBus.Subscribe(cachedChannelName, inboundChan)
+	sm.EventBus.Subscribe(inboundChannelName, managerChan)
+	sm.EventBus.Subscribe(transferChannelName, managerChan)
+	sm.EventBus.Subscribe(cachedChannelName, managerChan)
 	return sm
 }
 
@@ -91,7 +91,7 @@ func (sm *SubscriptionManager) UnregisterSubscription(objectType string, subId s
 }
 
 func (sm *SubscriptionManager) setupIncomingHandler() {
-	for evnt := range sm.inboundChan {
+	for evnt := range sm.managerChan {
 		iso := evnt.Data.(*nodes.ISO)
 		if iso.CloudObj.IsFinal {
 			// skip object if it is final
@@ -140,8 +140,9 @@ func (sm *SubscriptionManager) processObject(obj *nodes.ISO) bool {
 }
 
 func (sm *SubscriptionManager) Stop() {
-	sm.EventBus.Unsubscribe(sm.inboundChannelName, sm.inboundChan)
-	sm.EventBus.Unsubscribe(sm.cachedChannelName, sm.inboundChan)
+	sm.EventBus.Unsubscribe(sm.inboundChannelName, sm.managerChan)
+	sm.EventBus.Unsubscribe(sm.transferChannelName, sm.managerChan)
+	sm.EventBus.Unsubscribe(sm.cachedChannelName, sm.managerChan)
 	sm.mx.Lock()
 	defer sm.mx.Unlock()
 	for _, subscriberInfo := range sm.subscriptions {

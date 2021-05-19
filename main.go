@@ -37,11 +37,6 @@ func main() {
 	unprocessedChannelName := "unprocessed"
 	retryChannelName := "retry"
 	cachedChannelName := "cached"
-	inboundChan := make(bus.DataChannel)
-	inboundRepoChan := make(bus.DataChannel)
-	outboundChan := make(bus.DataChannel)
-	unprocessedChan := make(bus.DataChannel)
-	retryChan := make(bus.DataChannel)
 
 	appContext.Set("errChan", errChan)
 	appContext.Set("config", cfg)
@@ -54,11 +49,6 @@ func main() {
 	appContext.Set(model.UNPROCESSED_CHANNEL_NAME, unprocessedChannelName)
 	appContext.Set(model.RETRY_CHANNEL_NAME, retryChannelName)
 	appContext.Set(model.CACHED_CHANNEL_NAME, cachedChannelName)
-	appContext.Set("inboundChan", inboundChan)
-	appContext.Set("inboundRepoChan", inboundRepoChan)
-	appContext.Set("outboundChan", outboundChan)
-	appContext.Set("unprocessedChan", unprocessedChan)
-	appContext.Set("retryChan", retryChan)
 
 	cancellableTimer := utilsPkg.NewCancellableTimer()
 	appContext.Set("cacheTimer", cancellableTimer)

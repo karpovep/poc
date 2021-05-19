@@ -23,7 +23,7 @@ type (
 
 func NewRetryResolver(appContext app.IAppContext) IRetryResolver {
 	eventBus := appContext.Get("eventBus").(bus.IEventBus)
-	unprocessedChan := appContext.Get("unprocessedChan").(bus.DataChannel)
+	unprocessedChan := eventBus.CreateDataChannel()
 	unprocessedChannelName := appContext.Get(model.UNPROCESSED_CHANNEL_NAME).(string)
 	retryChannelName := appContext.Get(model.RETRY_CHANNEL_NAME).(string)
 	r := &RetryResolver{

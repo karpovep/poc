@@ -28,7 +28,7 @@ type (
 
 func NewRepository(appContext app.IAppContext) IRepository {
 	eventBus := appContext.Get("eventBus").(bus.IEventBus)
-	inboundRepoChan := appContext.Get("inboundRepoChan").(bus.DataChannel)
+	inboundRepoChan := eventBus.CreateDataChannel()
 	inboundChannelName := appContext.Get(model.INBOUND_CHANNEL_NAME).(string)
 	unprocessedChannelName := appContext.Get(model.UNPROCESSED_CHANNEL_NAME).(string)
 	cfg := appContext.Get("config").(*config.CloudConfig)

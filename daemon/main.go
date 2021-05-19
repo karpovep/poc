@@ -26,7 +26,7 @@ type (
 
 func NewDaemon(appContext app.IAppContext) IDaemon {
 	eventBus := appContext.Get("eventBus").(bus.IEventBus)
-	outboundChan := appContext.Get("outboundChan").(bus.DataChannel)
+	outboundChan := eventBus.CreateDataChannel()
 	outboundChannelName := appContext.Get(model.OUTBOUND_CHANNEL_NAME).(string)
 	unprocessedChannelName := appContext.Get(model.UNPROCESSED_CHANNEL_NAME).(string)
 	nodeClientProvider := appContext.Get("nodeClientProvider").(nodes.INodeClientProvider)

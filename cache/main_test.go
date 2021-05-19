@@ -31,6 +31,7 @@ func Test_ShouldProcessObjectBySchedulingReprocessing(t *testing.T) {
 	}
 
 	mockEventBus := bus_mock.NewMockIEventBus(mockCtrl)
+	mockEventBus.EXPECT().CreateDataChannel().Return(retryChan)
 	mockEventBus.EXPECT().Subscribe(retryChannelName, retryChan)
 	mockEventBus.EXPECT().Publish(cachedChannelName, internalServerObject)
 
@@ -41,7 +42,6 @@ func Test_ShouldProcessObjectBySchedulingReprocessing(t *testing.T) {
 	mockAppContext := app_mock.NewMockIAppContext(mockCtrl)
 	mockAppContext.EXPECT().Get("eventBus").Return(mockEventBus)
 	mockAppContext.EXPECT().Get("cacheTimer").Return(mockCacheTimer)
-	mockAppContext.EXPECT().Get("retryChan").Return(retryChan)
 	mockAppContext.EXPECT().Get(model.RETRY_CHANNEL_NAME).Return(retryChannelName)
 	mockAppContext.EXPECT().Get(model.CACHED_CHANNEL_NAME).Return(cachedChannelName)
 

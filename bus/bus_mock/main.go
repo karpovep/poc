@@ -34,6 +34,20 @@ func (m *MockIEventBus) EXPECT() *MockIEventBusMockRecorder {
 	return m.recorder
 }
 
+// CreateDataChannel mocks base method.
+func (m *MockIEventBus) CreateDataChannel() bus.DataChannel {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateDataChannel")
+	ret0, _ := ret[0].(bus.DataChannel)
+	return ret0
+}
+
+// CreateDataChannel indicates an expected call of CreateDataChannel.
+func (mr *MockIEventBusMockRecorder) CreateDataChannel() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDataChannel", reflect.TypeOf((*MockIEventBus)(nil).CreateDataChannel))
+}
+
 // Publish mocks base method.
 func (m *MockIEventBus) Publish(arg0 string, arg1 interface{}) {
 	m.ctrl.T.Helper()

@@ -26,7 +26,7 @@ func Test_ShouldHandleObjectFromInboundChannelByPublishingItToOutboundChannelIfT
 	cachedChannelName := "cached.test"
 	outboundChannelName := "outbound.test"
 	processedChannelName := "processed.test"
-	inboundChan := make(bus.DataChannel)
+	managerChan := make(bus.DataChannel)
 
 	entity := &cloud.TestEntity{Name: "My Test Entity"}
 	entityType := string(entity.ProtoReflect().Descriptor().FullName())
@@ -42,9 +42,10 @@ func Test_ShouldHandleObjectFromInboundChannelByPublishingItToOutboundChannelIfT
 	}
 
 	mockEventBus := bus_mock.NewMockIEventBus(mockCtrl)
-	mockEventBus.EXPECT().Subscribe(inboundChannelName, inboundChan)
-	mockEventBus.EXPECT().Subscribe(transferChannelName, inboundChan)
-	mockEventBus.EXPECT().Subscribe(cachedChannelName, inboundChan)
+	mockEventBus.EXPECT().CreateDataChannel().Return(managerChan)
+	mockEventBus.EXPECT().Subscribe(inboundChannelName, managerChan)
+	mockEventBus.EXPECT().Subscribe(transferChannelName, managerChan)
+	mockEventBus.EXPECT().Subscribe(cachedChannelName, managerChan)
 	mockEventBus.EXPECT().Publish(outboundChannelName, internalServerObject)
 
 	mockUtils := utils_mock.NewMockIUtils(mockCtrl)
@@ -52,7 +53,6 @@ func Test_ShouldHandleObjectFromInboundChannelByPublishingItToOutboundChannelIfT
 	mockAppContext := app_mock.NewMockIAppContext(mockCtrl)
 	mockAppContext.EXPECT().Get("eventBus").Return(mockEventBus)
 	mockAppContext.EXPECT().Get("utils").Return(mockUtils)
-	mockAppContext.EXPECT().Get("inboundChan").Return(inboundChan)
 	mockAppContext.EXPECT().Get(model.INBOUND_CHANNEL_NAME).Return(inboundChannelName)
 	mockAppContext.EXPECT().Get(model.TRANSFER_CHANNEL_NAME).Return(transferChannelName)
 	mockAppContext.EXPECT().Get(model.CACHED_CHANNEL_NAME).Return(cachedChannelName)
@@ -62,7 +62,7 @@ func Test_ShouldHandleObjectFromInboundChannelByPublishingItToOutboundChannelIfT
 	NewSubscriptionManager(mockAppContext)
 
 	// When
-	inboundChan <- dataEvent
+	managerChan <- dataEvent
 	time.Sleep(time.Millisecond * 100) // wait for the event to be processed
 
 	// Then - all expected calls are done
@@ -78,7 +78,7 @@ func Test_ShouldRegisterSubscriptionSuccessfullyAndSendObjectViaStreamAndReceive
 	cachedChannelName := "cached.test"
 	outboundChannelName := "outbound.test"
 	processedChannelName := "processed.test"
-	inboundChan := make(bus.DataChannel)
+	managerChan := make(bus.DataChannel)
 
 	entity := &cloud.TestEntity{Name: "My Test Entity"}
 	entityType := string(entity.ProtoReflect().Descriptor().FullName())
@@ -94,9 +94,10 @@ func Test_ShouldRegisterSubscriptionSuccessfullyAndSendObjectViaStreamAndReceive
 	}
 
 	mockEventBus := bus_mock.NewMockIEventBus(mockCtrl)
-	mockEventBus.EXPECT().Subscribe(inboundChannelName, inboundChan)
-	mockEventBus.EXPECT().Subscribe(transferChannelName, inboundChan)
-	mockEventBus.EXPECT().Subscribe(cachedChannelName, inboundChan)
+	mockEventBus.EXPECT().CreateDataChannel().Return(managerChan)
+	mockEventBus.EXPECT().Subscribe(inboundChannelName, managerChan)
+	mockEventBus.EXPECT().Subscribe(transferChannelName, managerChan)
+	mockEventBus.EXPECT().Subscribe(cachedChannelName, managerChan)
 	mockEventBus.EXPECT().Publish(processedChannelName, internalServerObject)
 
 	mockUtils := utils_mock.NewMockIUtils(mockCtrl)
@@ -116,7 +117,6 @@ func Test_ShouldRegisterSubscriptionSuccessfullyAndSendObjectViaStreamAndReceive
 	mockAppContext := app_mock.NewMockIAppContext(mockCtrl)
 	mockAppContext.EXPECT().Get("eventBus").Return(mockEventBus)
 	mockAppContext.EXPECT().Get("utils").Return(mockUtils)
-	mockAppContext.EXPECT().Get("inboundChan").Return(inboundChan)
 	mockAppContext.EXPECT().Get(model.INBOUND_CHANNEL_NAME).Return(inboundChannelName)
 	mockAppContext.EXPECT().Get(model.TRANSFER_CHANNEL_NAME).Return(transferChannelName)
 	mockAppContext.EXPECT().Get(model.CACHED_CHANNEL_NAME).Return(cachedChannelName)
@@ -129,7 +129,7 @@ func Test_ShouldRegisterSubscriptionSuccessfullyAndSendObjectViaStreamAndReceive
 
 	// When
 	subId, err := subscriptionManager.RegisterSubscription(entityType, mockStream, clientCloseChan)
-	inboundChan <- dataEvent
+	managerChan <- dataEvent
 	time.Sleep(time.Millisecond * 100) // wait for the event to be processed
 	subscriptionManager.UnregisterSubscription(entityType, subId)
 

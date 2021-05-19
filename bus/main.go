@@ -19,6 +19,7 @@ type IEventBus interface {
 	Subscribe(topic string, ch DataChannel)
 	Unsubscribe(topic string, ch DataChannel)
 	Publish(topic string, data interface{})
+	CreateDataChannel() DataChannel
 }
 
 // EventBus stores the information about subscribers interested for // a particular topic
@@ -68,4 +69,8 @@ func (eb *EventBus) Publish(topic string, data interface{}) {
 			}
 		}(DataEvent{Data: data, Topic: topic}, channels)
 	}
+}
+
+func (eb *EventBus) CreateDataChannel() DataChannel {
+	return make(DataChannel)
 }

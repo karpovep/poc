@@ -27,7 +27,7 @@ type (
 
 func NewCache(appContext app.IAppContext) ICache {
 	eventBus := appContext.Get("eventBus").(bus.IEventBus)
-	retryChan := appContext.Get("retryChan").(bus.DataChannel)
+	retryChan := eventBus.CreateDataChannel()
 	retryChannelName := appContext.Get(model.RETRY_CHANNEL_NAME).(string)
 	cachedChannelName := appContext.Get(model.CACHED_CHANNEL_NAME).(string)
 	cacheTimer := appContext.Get("cacheTimer").(utils.ICancellableTimer)
