@@ -45,7 +45,7 @@ func (r *CassandraRepository) CreateTable(params *queries.CreateTableQueryParams
 }
 
 func (r *CassandraRepository) DeleteActiveIso(iso *nodes.ISO) error {
-	deleteActiveIsoQuery, err := r.queries.Delete(&queries.DeleteQueryParams{
+	deleteActiveIsoQuery, err := r.queries.DeleteIfExists(&queries.DeleteQueryParams{
 		Table:       activeIsoTable,
 		WhereClause: "node_id = ? AND type = ? AND id = ?",
 	})
@@ -179,6 +179,33 @@ func (r *CassandraRepository) ListActiveIso(nodeId string, limit int, page []byt
 		return nil, nil, err
 	}
 	return activeIsoList, nextPage, nil
+}
+
+func (r *CassandraRepository) ResetActiveIsoNodeId(iso *nodes.ISO) error {
+	batch := r.session.NewBatch(1) // 1 - UnloggedBatch
+	serializedMetadata, err := proto.Marshal(iso.Metadata)
+	if err != nil {
+		return err
+	}
+	insertActiveIsoQuery, err := r.queries.Insert(&queries.InsertQueryParams{
+		Table:  activeIsoTable,
+		Fields: []string{"node_id", "type", "id", "cloud_object", "metadata"},
+	})
+	if err != nil {
+		return err
+	}
+	batch.Query(insertActiveIsoQuery, r.config.NodeId, iso.CloudObj.Entity.TypeUrl, iso.CloudObj.Id, iso.CloudObj.Entity.Value, serializedMetadata)
+
+	deleteActiveIsoQuery, err := r.queries.Delete(&queries.DeleteQueryParams{
+		Table:       activeIsoTable,
+		WhereClause: "node_id = ? AND type = ? AND id = ?",
+	})
+	if err != nil {
+		return err
+	}
+	batch.Query(deleteActiveIsoQuery, iso.SenderNodeId, iso.CloudObj.Entity.TypeUrl, iso.CloudObj.Id)
+
+	return r.session.ExecuteBatch(batch)
 }
 
 func (r *CassandraRepository) Start() {

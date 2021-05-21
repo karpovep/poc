@@ -10,6 +10,7 @@ import (
 	"poc/config"
 	"poc/model"
 	"poc/protos/nodes"
+	"poc/repository"
 )
 
 type (
@@ -21,6 +22,7 @@ type (
 	NodeServer struct {
 		nodes.UnimplementedNodeServer
 		EventBus            bus.IEventBus
+		Repo                repository.IRepository
 		Config              *config.CloudConfig
 		errChan             chan error
 		transferChannelName string
@@ -30,11 +32,13 @@ type (
 
 func NewNodeServer(appContext app.IAppContext) INodeServer {
 	eventBus := appContext.Get("eventBus").(bus.IEventBus)
+	repo := appContext.Get("repository").(repository.IRepository)
 	cfg := appContext.Get("config").(*config.CloudConfig)
 	errChan := appContext.Get("errChan").(chan error)
 	inboundChannelName := appContext.Get(model.TRANSFER_CHANNEL_NAME).(string)
 	return &NodeServer{
 		EventBus:            eventBus,
+		Repo:                repo,
 		Config:              cfg,
 		errChan:             errChan,
 		transferChannelName: inboundChannelName,
@@ -63,6 +67,11 @@ func (s *NodeServer) Stop() {
 
 func (s *NodeServer) Transfer(ctx context.Context, iso *nodes.ISO) (*nodes.Acknowledge, error) {
 	log.Println("received obj from transfer", iso.CloudObj.Id)
+	err := s.Repo.ResetActiveIsoNodeId(iso)
+	if err != nil {
+		log.Println("Error ResetActiveIsoNodeId", err)
+		return nil, err
+	}
 	s.EventBus.Publish(s.transferChannelName, iso)
 	return &nodes.Acknowledge{}, nil
 }

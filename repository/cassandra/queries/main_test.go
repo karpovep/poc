@@ -10,7 +10,7 @@ func Test_ShouldInitTemplates(t *testing.T) {
 	queries := NewQueries("templates/")
 
 	// Then
-	assert.Equal(t, 4, len(queries.templates.Templates()), "unexpected number of templates were initialised")
+	assert.Equal(t, 5, len(queries.templates.Templates()), "unexpected number of templates were initialised")
 }
 
 func Test_ShouldExecuteCreateTableTemplate(t *testing.T) {
@@ -94,11 +94,30 @@ func Test_ShouldExecuteDeleteTemplate(t *testing.T) {
 		Table:       "test_table",
 		WhereClause: "p_key > 0",
 	}
-	expectedQuery := "DELETE FROM test_table WHERE p_key > 0 IF EXISTS;"
+	expectedQuery := "DELETE FROM test_table WHERE p_key > 0;"
 	queries := NewQueries("templates/")
 
 	// When
 	actualQuery, err := queries.Delete(params)
+	if err != nil {
+		t.Fatal("Delete error", err)
+	}
+
+	// Then
+	assert.Equal(t, expectedQuery, actualQuery, "unexpected query received")
+}
+
+func Test_ShouldExecuteDeleteIfExistsTemplate(t *testing.T) {
+	// Given
+	params := &DeleteQueryParams{
+		Table:       "test_table",
+		WhereClause: "p_key > 0",
+	}
+	expectedQuery := "DELETE FROM test_table WHERE p_key > 0 IF EXISTS;"
+	queries := NewQueries("templates/")
+
+	// When
+	actualQuery, err := queries.DeleteIfExists(params)
 	if err != nil {
 		t.Fatal("Delete error", err)
 	}

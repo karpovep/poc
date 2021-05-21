@@ -24,6 +24,7 @@ mock-gen:
 	mockgen -destination=utils/utils_mock/main.go -package=utils_mock poc/utils IUtils
 	mockgen -destination=utils/utils_mock/cancellable_timer.go -package=utils_mock poc/utils ICancellableTimer
 	mockgen -destination=app/app_mock/context.go -package=app_mock poc/app IAppContext
+	mockgen -destination=repository/repository_mock/main.go -package=repository_mock poc/repository IRepository
 
 compile_protos:
 	protoc --go_out=. --go_opt=paths=source_relative \

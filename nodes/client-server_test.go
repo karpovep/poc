@@ -12,6 +12,7 @@ import (
 	"poc/model"
 	"poc/protos/cloud"
 	"poc/protos/nodes"
+	"poc/repository/repository_mock"
 	"testing"
 )
 
@@ -38,9 +39,12 @@ func Test_ShouldTransferObjectFromNodeCLientToNodeServer(t *testing.T) {
 
 	var actualIso *nodes.ISO
 	mockEventBus := bus_mock.NewMockIEventBus(mockCtrl)
-	mockEventBus.EXPECT().Publish(transferChannelName, gomock.Any()).Do(func(channnamName string, arg *nodes.ISO) {
+	mockEventBus.EXPECT().Publish(transferChannelName, gomock.Any()).Do(func(channelName string, arg *nodes.ISO) {
 		actualIso = arg
 	})
+
+	mockRepo := repository_mock.NewMockIRepository(mockCtrl)
+	mockRepo.EXPECT().ResetActiveIsoNodeId(gomock.Any()).Return(nil)
 
 	cfg := &config.CloudConfig{
 		NodeId: nodeId,
@@ -50,6 +54,7 @@ func Test_ShouldTransferObjectFromNodeCLientToNodeServer(t *testing.T) {
 	}
 	mockAppContext := app_mock.NewMockIAppContext(mockCtrl)
 	mockAppContext.EXPECT().Get("eventBus").Return(mockEventBus)
+	mockAppContext.EXPECT().Get("repository").Return(mockRepo)
 	mockAppContext.EXPECT().Get("errChan").Return(errChan)
 	mockAppContext.EXPECT().Get("config").Return(cfg)
 	mockAppContext.EXPECT().Get(model.TRANSFER_CHANNEL_NAME).Return(transferChannelName)

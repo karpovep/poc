@@ -165,7 +165,7 @@ func Test_ShouldSaveFinalIsoAndFindItByTypeAndId(t *testing.T) {
 	assert.Equal(t, internalServerObject.Metadata.InitialNodeId, actualObj.Metadata.InitialNodeId, "encoded saved and retrieved Metadata.InitialNodeId is not identical")
 }
 
-func Test_ShouldList(t *testing.T) {
+func Test_ShouldListActiveIso(t *testing.T) {
 	// Given
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -194,4 +194,51 @@ func Test_ShouldList(t *testing.T) {
 	// Then
 	fmt.Println(activeIsos)
 	fmt.Println(nextPage)
+}
+
+func Test_ShouldSaveNotFinalIsoAndResetActiveIsoNodeId(t *testing.T) {
+	// Given
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	oldNodeId := "test-node-000"
+	entity := &cloud.TestEntity{Name: "My Test Entity"}
+	entityType := string(entity.ProtoReflect().Descriptor().FullName())
+	serialized, err := proto.Marshal(entity)
+	if err != nil {
+		t.Fatal("could not serialize:", err)
+	}
+	cloudObj := &cloud.CloudObject{
+		Id:     gocql.TimeUUID().String(),
+		Entity: &anypb.Any{TypeUrl: entityType, Value: serialized},
+	}
+	internalServerObject := model.NewIsoFromCloudObject(cloudObj)
+	internalServerObject.Metadata.InitialNodeId = oldNodeId
+	internalServerObject.SenderNodeId = oldNodeId
+
+	cfg := &config.CloudConfig{
+		NodeId: "test-node-1",
+		Cassandra: config.CassandraConfig{
+			Hosts:         []string{"localhost"},
+			Keyspace:      "cloud",
+			TemplatesRoot: "queries/templates",
+		},
+	}
+
+	mockAppContext := app_mock.NewMockIAppContext(mockCtrl)
+	mockAppContext.EXPECT().Get("config").Return(cfg)
+
+	cassandraRepo := NewCassandraRepository(mockAppContext)
+	cassandraRepo.Start()
+
+	// When
+	err = cassandraRepo.SaveIso(internalServerObject)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = cassandraRepo.ResetActiveIsoNodeId(internalServerObject)
+	if err != nil {
+		t.Fatal(err)
+	}
 }

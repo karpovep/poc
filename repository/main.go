@@ -14,12 +14,13 @@ type (
 	IRepository interface {
 		Start()
 		Stop()
+		ResetActiveIsoNodeId(iso *nodes.ISO) error
 	}
 
 	Repository struct {
 		EventBus               bus.IEventBus
 		config                 *config.CloudConfig
-		inboundRepoChan        bus.DataChannel
+		inboundChan            bus.DataChannel
 		inboundChannelName     string
 		unprocessedChannelName string
 		Impl                   impls.IRepositoryImpl
@@ -40,7 +41,7 @@ func NewRepository(appContext app.IAppContext) IRepository {
 	return &Repository{
 		EventBus:               eventBus,
 		config:                 cfg,
-		inboundRepoChan:        inboundRepoChan,
+		inboundChan:            inboundRepoChan,
 		inboundChannelName:     inboundChannelName,
 		unprocessedChannelName: unprocessedChannelName,
 		Impl:                   repoImpl,
@@ -48,7 +49,7 @@ func NewRepository(appContext app.IAppContext) IRepository {
 }
 
 func (r *Repository) Stop() {
-	r.EventBus.Unsubscribe(r.inboundChannelName, r.inboundRepoChan)
+	r.EventBus.Unsubscribe(r.inboundChannelName, r.inboundChan)
 	r.Impl.Stop()
 }
 
@@ -56,11 +57,15 @@ func (r *Repository) Start() {
 	r.Impl.Start()
 	go r.setupIncomingHandler()
 	go r.loadActiveIso()
-	r.EventBus.Subscribe(r.inboundChannelName, r.inboundRepoChan)
+	r.EventBus.Subscribe(r.inboundChannelName, r.inboundChan)
+}
+
+func (r *Repository) ResetActiveIsoNodeId(iso *nodes.ISO) error {
+	return r.Impl.ResetActiveIsoNodeId(iso)
 }
 
 func (r *Repository) setupIncomingHandler() {
-	for evnt := range r.inboundRepoChan {
+	for evnt := range r.inboundChan {
 		internalServerObject := evnt.Data.(*nodes.ISO)
 		err := r.Impl.SaveIso(internalServerObject)
 		//todo handle errors

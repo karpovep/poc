@@ -39,10 +39,11 @@ type (
 )
 
 const (
-	CREATE_TABLE_QUERY_TEMPLATE_NAME string = "create_table.gotmpl"
-	INSERT_QUERY_TEMPLATE_NAME       string = "insert.gotmpl"
-	SELECT_QUERY_TEMPLATE_NAME       string = "select.gotmpl"
-	DELETE_QUERY_TEMPLATE_NAME       string = "delete.gotmpl"
+	CREATE_TABLE_QUERY_TEMPLATE_NAME     string = "create_table.gotmpl"
+	INSERT_QUERY_TEMPLATE_NAME           string = "insert.gotmpl"
+	SELECT_QUERY_TEMPLATE_NAME           string = "select.gotmpl"
+	DELETE_QUERY_TEMPLATE_NAME           string = "delete.gotmpl"
+	DELETE_IF_EXISTS_QUERY_TEMPLATE_NAME string = "delete_if_exists.gotmpl"
 )
 
 func NewQueries(templatesRoot string) *Queries {
@@ -58,6 +59,7 @@ func NewQueries(templatesRoot string) *Queries {
 			templatesRoot+"/"+INSERT_QUERY_TEMPLATE_NAME,
 			templatesRoot+"/"+SELECT_QUERY_TEMPLATE_NAME,
 			templatesRoot+"/"+DELETE_QUERY_TEMPLATE_NAME,
+			templatesRoot+"/"+DELETE_IF_EXISTS_QUERY_TEMPLATE_NAME,
 		)),
 	}
 }
@@ -86,4 +88,8 @@ func (q *Queries) Select(params *SelectQueryParams) (string, error) {
 
 func (q *Queries) Delete(params *DeleteQueryParams) (string, error) {
 	return q.query(DELETE_QUERY_TEMPLATE_NAME, params)
+}
+
+func (q *Queries) DeleteIfExists(params *DeleteQueryParams) (string, error) {
+	return q.query(DELETE_IF_EXISTS_QUERY_TEMPLATE_NAME, params)
 }

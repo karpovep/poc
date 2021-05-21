@@ -21,6 +21,7 @@ message ISO {
     IsoMeta metadata = 2;
     //nodeId to timestamp map when the object was transferred from the node
     map<string, int64> transferredByNodes = 3;
+    string senderNodeId = 4;
 }
 
 message Acknowledge {
