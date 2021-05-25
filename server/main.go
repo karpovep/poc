@@ -2,8 +2,8 @@ package server
 
 import (
 	"context"
+	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
-	"log"
 	"net"
 	"poc/app"
 	"poc/bus"
@@ -56,7 +56,7 @@ func (s *GrpcServer) Start() {
 			s.errChan <- err
 			return
 		}
-		log.Printf("server port: %v\n", s.Config.Server.Port)
+		log.WithFields(log.Fields{"port": s.Config.Server.Port}).Info("GRPC Client Server started")
 		s.server = grpc.NewServer()
 		cloud.RegisterCloudServer(s.server, s)
 		if err := s.server.Serve(lis); err != nil {
@@ -73,14 +73,14 @@ func (s *GrpcServer) Subscribe(stream cloud.Cloud_SubscribeServer) error {
 	// read message
 	msg, err := stream.Recv()
 	if err != nil {
-		log.Println("ERROR: stream.Recv error", err)
+		log.WithFields(log.Fields{"error": err}).Error("stream.Recv error")
 		return nil
 	}
 
 	// we expect first message to be SubscribeRequest
 	var subscribeRequest cloud.SubscribeRequest
 	if err := msg.Entity.UnmarshalTo(&subscribeRequest); err != nil {
-		log.Println("ERROR: unmarshal SubscribeRequest from any field", err)
+		log.WithFields(log.Fields{"error": err}).Error("unmarshal SubscribeRequest from any field error")
 		return nil
 	}
 
@@ -88,22 +88,22 @@ func (s *GrpcServer) Subscribe(stream cloud.Cloud_SubscribeServer) error {
 	// subscribe client
 	subscriptionId, err := s.SubscriptionManager.RegisterSubscription(subscribeRequest.Type, stream, clientCloseChan)
 	if err != nil {
-		log.Println("ERROR: RegisterSubscription", err)
+		log.WithFields(log.Fields{"error": err}).Error("RegisterSubscription error")
 		return nil
 	}
 
 	select {
 	case <-clientCloseChan:
-		log.Println("Closing stream for client:", subscriptionId)
+		log.WithFields(log.Fields{"subscriptionId": subscriptionId}).Debug("Closing stream to client")
 	case <-stream.Context().Done():
-		log.Println("stream.Context().Done()")
+		log.WithFields(log.Fields{"subscriptionId": subscriptionId}).Debug("subscriber disconnected")
 	}
 	s.SubscriptionManager.UnregisterSubscription(subscribeRequest.Type, subscriptionId)
 	return nil
 }
 
 func (s *GrpcServer) Save(ctx context.Context, cloudObj *cloud.CloudObject) (*cloud.OperationResult, error) {
-	log.Println("incomingObject", cloudObj)
+	log.WithFields(log.Fields{"cloudObj": cloudObj}).Debug("incoming object")
 	cloudObj.Id = s.Utils.GenerateTimeUuid()
 	iso := model.NewIsoFromCloudObject(cloudObj)
 	iso.Metadata.InitialNodeId = s.Config.NodeId

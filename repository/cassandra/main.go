@@ -3,9 +3,9 @@ package cassandra
 import (
 	"fmt"
 	"github.com/gocql/gocql"
+	log "github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
-	"log"
 	"poc/app"
 	"poc/config"
 	"poc/model"
@@ -117,12 +117,12 @@ func (r *CassandraRepository) FindIsoByTypeAndId(objType string, id string) (*no
 	var metadata []byte
 	var isFinal bool
 	if err := r.session.Query(query, partitionKey, objType, id).Consistency(gocql.One).Scan(&cloudObject, &metadata, &isFinal); err != nil {
-		log.Fatal(err)
+		log.WithFields(log.Fields{"error": err}).Fatal("session.Query error")
 	}
 
 	var isoMeta nodes.IsoMeta
 	if err := proto.Unmarshal(metadata, &isoMeta); err != nil {
-		log.Fatalf("Could not unmarshal metadata from db: %s", err)
+		log.WithFields(log.Fields{"error": err}).Fatal("Could not unmarshal metadata from db")
 	}
 
 	return model.NewIsoFromCloudObjectAndMeta(&cloud.CloudObject{
@@ -214,13 +214,13 @@ func (r *CassandraRepository) Start() {
 	r.cluster.Consistency = gocql.Quorum
 
 	if r.cluster.Keyspace == "" {
-		log.Fatalln("cassandra keyspace config is missing")
+		log.Fatal("cassandra keyspace config is missing")
 		return
 	}
 
 	session, err := r.cluster.CreateSession()
 	if err != nil {
-		log.Fatalln("cannot create connection session to cassandra cluster", err)
+		log.WithFields(log.Fields{"error": err}).Fatal("cannot create connection session to cassandra cluster")
 		return
 	}
 	r.session = session
@@ -243,7 +243,7 @@ func (r *CassandraRepository) Start() {
 		},
 	})
 	if err != nil {
-		log.Fatalln("cannot create table:", isoTable, err)
+		log.WithFields(log.Fields{"table": isoTable, "error": err}).Fatal("cannot create table")
 	}
 
 	err = r.CreateTable(&queries.CreateTableQueryParams{
@@ -262,7 +262,7 @@ func (r *CassandraRepository) Start() {
 		},
 	})
 	if err != nil {
-		log.Fatalln("cannot create table:", activeIsoTable, err)
+		log.WithFields(log.Fields{"table": activeIsoTable, "error": err}).Fatal("cannot create table")
 	}
 }
 

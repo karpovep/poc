@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	log "github.com/sirupsen/logrus"
 	"os"
 	"os/signal"
 	"poc/app"
@@ -9,7 +9,7 @@ import (
 	cache2 "poc/cache"
 	"poc/config"
 	daemon2 "poc/daemon"
-	"poc/model"
+	"poc/logger"
 	"poc/nodes"
 	"poc/repository"
 	"poc/retry"
@@ -27,28 +27,19 @@ func main() {
 	signal.Notify(stopChan, syscall.SIGTERM, syscall.SIGINT)
 
 	cfg := config.Init("config.yml")
+	logger.Init(cfg.Logger)
+
+	// start the app
+	log.Info("Starting the app...")
+
 	appContext := app.NewApplicationContext()
 	utils := utilsPkg.NewUtils()
-	eventBus := bus.NewEventBus()
-	inboundChannelName := "inbound"
-	transferChannelName := "transfer"
-	outboundChannelName := "outbound"
-	processedChannelName := "processed"
-	unprocessedChannelName := "unprocessed"
-	retryChannelName := "retry"
-	cachedChannelName := "cached"
+	eventBus := bus.NewEventBus(appContext)
 
 	appContext.Set("errChan", errChan)
 	appContext.Set("config", cfg)
 	appContext.Set("utils", utils)
 	appContext.Set("eventBus", eventBus)
-	appContext.Set(model.INBOUND_CHANNEL_NAME, inboundChannelName)
-	appContext.Set(model.TRANSFER_CHANNEL_NAME, transferChannelName)
-	appContext.Set(model.OUTBOUND_CHANNEL_NAME, outboundChannelName)
-	appContext.Set(model.PROCESSED_CHANNEL_NAME, processedChannelName)
-	appContext.Set(model.UNPROCESSED_CHANNEL_NAME, unprocessedChannelName)
-	appContext.Set(model.RETRY_CHANNEL_NAME, retryChannelName)
-	appContext.Set(model.CACHED_CHANNEL_NAME, cachedChannelName)
 
 	cancellableTimer := utilsPkg.NewCancellableTimer()
 	appContext.Set("cacheTimer", cancellableTimer)
@@ -77,7 +68,7 @@ func main() {
 	grpcServer := server.NewGrpcServer(appContext)
 
 	defer func() {
-		log.Println("Stopping the app...")
+		log.Info("Stopping the app...")
 		// do graceful stop of required resources here in right order
 		nodeServer.Stop()
 		cache.Stop()
@@ -87,19 +78,16 @@ func main() {
 		nodeClientProvider.Stop()
 		//cassandraRepository.Stop()
 		grpcServer.Stop()
-		log.Println("App has been stopped")
+		log.Info("App has been stopped")
 	}()
 
-	// start the app
-	log.Println("Starting the app...")
 	grpcServer.Start()
-	log.Println("App has been started")
 
 	// block until either OS signal, or fatal error
 	select {
 	case err := <-errChan:
-		log.Printf("Fatal error: %v\n", err)
+		log.WithFields(log.Fields{"error": err}).Fatal("Fatal error")
 	case sig := <-stopChan:
-		log.Printf("Received OS signal: %v\n", sig)
+		log.WithFields(log.Fields{"sig": sig}).Info("Received OS signal")
 	}
 }

@@ -1,7 +1,7 @@
 package daemon
 
 import (
-	"log"
+	log "github.com/sirupsen/logrus"
 	"poc/app"
 	"poc/bus"
 	"poc/model"
@@ -54,7 +54,7 @@ func (d *Daemon) startEventHandler() {
 		err := nodeClient.Transfer(iso)
 
 		if err != nil {
-			log.Printf("Can not send %v to %v, err = %v", iso, nodeClient, err)
+			log.WithFields(log.Fields{"id": iso.CloudObj.Id, "error": err}).Debug("daemon: Can not send obj")
 			//return unprocessed message back to application
 			d.EventBus.Publish(d.unprocessedChannelName, event.Data)
 		}

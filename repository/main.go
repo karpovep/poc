@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"log"
+	log "github.com/sirupsen/logrus"
 	"poc/app"
 	"poc/bus"
 	"poc/config"
@@ -36,7 +36,7 @@ func NewRepository(appContext app.IAppContext) IRepository {
 	repoFactory := NewRepositoryFactory()
 	repoImpl, err := repoFactory.CreateRepository(cfg.Repository.Type, appContext)
 	if err != nil {
-		log.Fatalln("repoFactory.CreateRepository error", err)
+		log.WithFields(log.Fields{"error": err}).Fatal("repoFactory.CreateRepository error")
 	}
 	return &Repository{
 		EventBus:               eventBus,
@@ -70,7 +70,7 @@ func (r *Repository) setupIncomingHandler() {
 		err := r.Impl.SaveIso(internalServerObject)
 		//todo handle errors
 		if err != nil {
-			log.Fatalln("SaveIso error", err)
+			log.WithFields(log.Fields{"error": err}).Fatal("SaveIso error")
 		}
 	}
 }
@@ -78,30 +78,30 @@ func (r *Repository) setupIncomingHandler() {
 // loads all active ISOs related to configured NodeId and checks whether it is processed or not. Removes active ISO
 // it it was already processed and publishes it to unprocessed channel for processing otherwise
 func (r *Repository) loadActiveIso() {
-	log.Println("Start loading active ISOs from DB...")
+	log.Info("Start loading active ISOs from DB...")
 	var nextPage []byte
 	var activeIsoList []*nodes.ISO
 	var err error
 	for ok := true; ok; ok = len(nextPage) > 0 {
 		activeIsoList, nextPage, err = r.Impl.ListActiveIso(r.config.NodeId, 10, nil)
 		if err != nil {
-			log.Fatalln("r.Impl.ListActiveIso error", err)
+			log.WithFields(log.Fields{"error": err}).Fatal("r.Impl.ListActiveIso error")
 		}
 
 		for _, activeIso := range activeIsoList {
 			iso, err := r.Impl.FindIsoByTypeAndId(activeIso.CloudObj.Entity.TypeUrl, activeIso.CloudObj.Id)
 			if err != nil {
-				log.Fatalln("r.Impl.FindIsoByTypeAndId error", err)
+				log.WithFields(log.Fields{"error": err}).Fatal("r.Impl.FindIsoByTypeAndId error")
 			}
 			if iso.CloudObj.IsFinal {
 				err = r.Impl.DeleteActiveIso(iso)
 				if err != nil {
-					log.Fatalln("r.Impl.DeleteActiveIso error", err)
+					log.WithFields(log.Fields{"error": err}).Fatal("r.Impl.DeleteActiveIso error")
 				}
 			} else {
 				r.EventBus.Publish(r.unprocessedChannelName, iso)
 			}
 		}
 	}
-	log.Println("Loading of active ISOs from DB has been finished")
+	log.Info("Loading of active ISOs from DB has been finished")
 }

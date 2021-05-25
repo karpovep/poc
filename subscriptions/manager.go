@@ -1,9 +1,9 @@
 package subscriptions
 
 import (
+	log "github.com/sirupsen/logrus"
 	"github.com/viney-shih/go-lock"
 	"io"
-	"log"
 	"poc/app"
 	"poc/bus"
 	"poc/model"
@@ -75,7 +75,7 @@ func (sm *SubscriptionManager) RegisterSubscription(objectType string, stream cl
 	}
 	subId := sm.Utils.GenerateUuid()
 	sm.subscriptions[objectType][subId] = &Subscriber{stream: stream, closeChan: closeCh, casMut: lock.NewCASMutex()}
-	log.Println("Subscription registered", subId)
+	log.WithFields(log.Fields{"subscriptionId": subId}).Debug("Subscription registered")
 	return subId, nil
 }
 
@@ -113,25 +113,25 @@ func (sm *SubscriptionManager) processObject(obj *nodes.ISO) bool {
 		if lockAcquired {
 			defer subscriber.casMut.Unlock()
 			// send object to client for the processing
-			log.Println("sending object to subscriber:", subId)
+			log.WithFields(log.Fields{"subscriptionId": subId, "id": obj.CloudObj.Id}).Debug("sending object to subscriber")
 			err := subscriber.stream.Send(obj.CloudObj)
 			if err != nil {
-				log.Fatal("Send error:", err)
+				log.WithFields(log.Fields{"error": err}).Fatal("subscriber.stream.Send error")
 			}
 			// wait for the Acknowledgment from the client
-			log.Println("waiting acknowledge from subscriber:", subId)
+			log.WithFields(log.Fields{"subscriptionId": subId, "id": obj.CloudObj.Id}).Debug("waiting acknowledge from subscriber")
 			encodedAck, err := subscriber.stream.Recv()
 			if err == io.EOF {
 				break
 			}
 			if err != nil {
-				log.Fatal("stream.Recv error", err)
+				log.WithFields(log.Fields{"error": err}).Fatal("stream.Recv error")
 			}
 			var ack cloud.Acknowledge
 			if err := encodedAck.Entity.UnmarshalTo(&ack); err != nil {
-				log.Fatalf("Could not unmarshal Acknowledge from any field: %s", err)
+				log.WithFields(log.Fields{"error": err}).Fatal("Could not unmarshal Acknowledge from any field")
 			}
-			log.Println("received ACK from client")
+			log.WithFields(log.Fields{"subscriptionId": subId, "id": obj.CloudObj.Id}).Debug("received ACK from client")
 
 			return true
 		}

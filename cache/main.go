@@ -1,7 +1,7 @@
 package cache
 
 import (
-	"log"
+	log "github.com/sirupsen/logrus"
 	"poc/app"
 	"poc/bus"
 	"poc/model"
@@ -53,7 +53,7 @@ func (cache *Cache) setupRetryHandler() {
 func (cache *Cache) ScheduleProcessing(obj *nodes.ISO) {
 	timedOut := <-cache.timer.After(time.Second * time.Duration(obj.Metadata.RetryIn))
 	if timedOut {
-		log.Println("cache: publish obj")
+		log.WithFields(log.Fields{"id": obj.CloudObj.Id}).Debug("cache: publish obj")
 		cache.EventBus.Publish(cache.cachedChannelName, obj)
 	}
 }

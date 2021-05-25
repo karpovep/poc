@@ -1,4 +1,6 @@
 nodeId: node-1
+logger:
+  level: debug
 nodeServer:
   port: :40042
 server:

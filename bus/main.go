@@ -1,6 +1,8 @@
 package bus
 
 import (
+	"poc/app"
+	"poc/model"
 	"sync"
 )
 
@@ -28,10 +30,21 @@ type EventBus struct {
 	rm          sync.RWMutex
 }
 
-func NewEventBus() IEventBus {
+func NewEventBus(appContext app.IAppContext) IEventBus {
+	initChannels(appContext)
 	return &EventBus{
 		subscribers: map[string]DataChannelSlice{},
 	}
+}
+
+func initChannels(appContext app.IAppContext) {
+	appContext.Set(model.INBOUND_CHANNEL_NAME, "inbound")
+	appContext.Set(model.TRANSFER_CHANNEL_NAME, "transfer")
+	appContext.Set(model.OUTBOUND_CHANNEL_NAME, "outbound")
+	appContext.Set(model.PROCESSED_CHANNEL_NAME, "processed")
+	appContext.Set(model.UNPROCESSED_CHANNEL_NAME, "unprocessed")
+	appContext.Set(model.RETRY_CHANNEL_NAME, "retry")
+	appContext.Set(model.CACHED_CHANNEL_NAME, "cached")
 }
 
 func (eb *EventBus) Subscribe(topic string, ch DataChannel) {

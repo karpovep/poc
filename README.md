@@ -1,6 +1,6 @@
 # [Distributed Processing Cloud - PoC](https://distributed-processing-cloud.firebaseapp.com/)
 
-![10%](https://progress-bar.dev/10)
+![25%](https://progress-bar.dev/25)
 
 The aim of this project is to build easy-to-scale distributed processing cloud with abilities to support custom types of objects as well as custom implementations of the processing services to be able to meet all of the required business needs
 

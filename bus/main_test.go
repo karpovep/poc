@@ -1,6 +1,7 @@
 package bus
 
 import (
+	"poc/app"
 	"testing"
 	"time"
 
@@ -9,7 +10,8 @@ import (
 
 func Test_ShouldSendPublishedDataToAllSubscribers(t *testing.T) {
 	// Given
-	eb := NewEventBus()
+	appContext := app.NewApplicationContext()
+	eb := NewEventBus(appContext)
 	topic := "test-topic"
 	ch := make(chan DataEvent)
 	event := "Some test data to be published"
@@ -29,8 +31,10 @@ func Test_ShouldSendPublishedDataToAllSubscribers(t *testing.T) {
 	}
 }
 
-func Test_ShouldSubscriberShouldNotReceiveDataAfterUnsibscribed(t *testing.T) {
-	eb := NewEventBus()
+func Test_ShouldSubscriberShouldNotReceiveDataAfterItUnsubscribed(t *testing.T) {
+	// Given
+	appContext := app.NewApplicationContext()
+	eb := NewEventBus(appContext)
 	topic := "testTopic"
 	ch := make(chan DataEvent)
 	undeliverableEvent := "undeliverableEvent"

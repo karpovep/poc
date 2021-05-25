@@ -2,8 +2,8 @@ package nodes
 
 import (
 	"context"
+	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
-	"log"
 	"net"
 	"poc/app"
 	"poc/bus"
@@ -52,7 +52,7 @@ func (s *NodeServer) Start() {
 			s.errChan <- err
 			return
 		}
-		log.Printf("node server started: %v\n", s.Config.NodeServer.Port)
+		log.WithFields(log.Fields{"port": s.Config.NodeServer.Port}).Info("GRPC Node Server started")
 		s.server = grpc.NewServer()
 		nodes.RegisterNodeServer(s.server, s)
 		if err := s.server.Serve(lis); err != nil {
@@ -66,10 +66,10 @@ func (s *NodeServer) Stop() {
 }
 
 func (s *NodeServer) Transfer(ctx context.Context, iso *nodes.ISO) (*nodes.Acknowledge, error) {
-	log.Println("received obj from transfer", iso.CloudObj.Id)
+	log.WithFields(log.Fields{"id": iso.CloudObj.Id}).Debug("received obj from transfer")
 	err := s.Repo.ResetActiveIsoNodeId(iso)
 	if err != nil {
-		log.Println("Error ResetActiveIsoNodeId", err)
+		log.WithFields(log.Fields{"error": err}).Fatal("ResetActiveIsoNodeId error")
 		return nil, err
 	}
 	s.EventBus.Publish(s.transferChannelName, iso)
@@ -77,7 +77,7 @@ func (s *NodeServer) Transfer(ctx context.Context, iso *nodes.ISO) (*nodes.Ackno
 }
 
 func (s *NodeServer) GetInfo(ctx context.Context, infoReq *nodes.NodeInfoRequest) (*nodes.NodeInfoResponse, error) {
-	log.Println("GetInfo request")
+	log.Debug("GetInfo request")
 	return &nodes.NodeInfoResponse{
 		Id: s.Config.NodeId,
 	}, nil

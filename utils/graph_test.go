@@ -32,7 +32,7 @@ func Test_ShouldCreateGraphWithThreeNodesConnectedWithEachOtherAndRemoveOneNodeA
 
 	// Then
 	fmt.Println(graph)
-	assert.Equal(t, []*Node{n1, n2}, graph.GetNodes(), "expected to get slice of 2 nodes after removal")
+	assert.ElementsMatch(t, []*Node{n1, n2}, graph.GetNodes(), "expected to get slice of 2 nodes after removal")
 }
 
 func Test_ShouldMergeTwoGraphs(t *testing.T) {
@@ -59,5 +59,5 @@ func Test_ShouldMergeTwoGraphs(t *testing.T) {
 
 	// Then
 	fmt.Println(graph)
-	assert.Equal(t, []*Node{n1, n2, n3}, graph.GetNodes(), "expected to get slice of 3 nodes")
+	assert.ElementsMatch(t, []*Node{n1, n2, n3}, graph.GetNodes(), "expected to get slice of 3 nodes")
 }

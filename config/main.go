@@ -7,6 +7,10 @@ import (
 )
 
 type (
+	LoggerConfig struct {
+		Level string `yaml:"level" env:"LOGGER_LEVEL" env-default:"debug"`
+	}
+
 	ServerConfig struct {
 		Port  string   `yaml:"port" env:"SERVER_PORT" env-default:":50051"`
 		Nodes []string `yaml:"nodes"`
@@ -31,7 +35,8 @@ type (
 	}
 
 	CloudConfig struct {
-		NodeId     string `yaml:"nodeId"`
+		NodeId     string       `yaml:"nodeId"`
+		Logger     LoggerConfig `yaml:"logger"`
 		Server     ServerConfig
 		NodeServer NodeServerConfig `yaml:"nodeServer"`
 		Client     ClientConfig

@@ -3,8 +3,11 @@ BINARY_NAME=dpc
 build:
 	go build -o ${BINARY_NAME} main.go
 
-run:
+run-dev:
 	go run main.go
+
+run: build
+	./dpc
 
 clean:
 	go clean

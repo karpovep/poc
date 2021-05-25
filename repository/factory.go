@@ -2,7 +2,7 @@ package repository
 
 import (
 	"fmt"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"poc/app"
 	"poc/model"
 	"poc/repository/cassandra"
@@ -22,7 +22,7 @@ func NewRepositoryFactory() IRepositoryFactory {
 }
 
 func (rf *RepositoryFactory) CreateRepository(repositoryType model.RepositoryType, appContext app.IAppContext) (impls.IRepositoryImpl, error) {
-	log.Println("Initializing repository:", repositoryType)
+	log.WithFields(log.Fields{"repo": repositoryType}).Info("Initializing repository")
 	switch repositoryType {
 	case model.CASSANDRA_REPOSITORY_TYPE:
 		return cassandra.NewCassandraRepository(appContext), nil
