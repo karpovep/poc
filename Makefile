@@ -39,3 +39,11 @@ docker-start:
 
 docker-stop:
 	./docker/scripts/docker-stop
+
+install:
+	brew install protobuf
+	go get -u github.com/golang/protobuf/{proto,protoc-gen-go}
+	go get -u google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+vendor:
+	go mod vendor

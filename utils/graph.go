@@ -55,7 +55,7 @@ func (g *Graph) GetNodes() []*Node {
 	return nodes
 }
 
-// AddNode removes node from the graph and all its edges
+// RemoveNode removes node from the graph and all its edges
 func (g *Graph) RemoveNode(n *Node) {
 	g.Lock()
 	defer g.Unlock()

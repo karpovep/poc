@@ -72,9 +72,10 @@ Each Node should implement the following functionality:
 - :white_check_mark: Implement PoC (2 nodes + 2 clients)
 - :large_orange_diamond: introduce data storage (store data + querying data)
 - :x: Failover handling
-- :x: Logging and monitoring
+- :x: Logging (with tracing) and monitoring
 - :x: Transactional processing
 - :x: Reporting & Analytics
+- :x: Processing of huge objects (files & binaries)
 - ...
 - :x: Centralised cloud network
 
