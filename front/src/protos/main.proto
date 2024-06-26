@@ -7,8 +7,8 @@ package poc.protos.cloud;
 
 // service definition.
 service Cloud {
+    rpc Subscribe (CloudObject) returns (CloudObject) {}
     rpc Save (CloudObject) returns (OperationResult) {}
-    rpc Subscribe (stream CloudObject) returns (stream CloudObject) {}
 }
 
 message CloudObject {

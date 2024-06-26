@@ -82,6 +82,67 @@ proto.poc.protos.cloud.CloudPromiseClient =
  * @const
  * @type {!grpc.web.MethodDescriptor<
  *   !proto.poc.protos.cloud.CloudObject,
+ *   !proto.poc.protos.cloud.CloudObject>}
+ */
+const methodDescriptor_Cloud_Subscribe = new grpc.web.MethodDescriptor(
+  '/poc.protos.cloud.Cloud/Subscribe',
+  grpc.web.MethodType.UNARY,
+  proto.poc.protos.cloud.CloudObject,
+  proto.poc.protos.cloud.CloudObject,
+  /**
+   * @param {!proto.poc.protos.cloud.CloudObject} request
+   * @return {!Uint8Array}
+   */
+  function(request) {
+    return request.serializeBinary();
+  },
+  proto.poc.protos.cloud.CloudObject.deserializeBinary
+);
+
+
+/**
+ * @param {!proto.poc.protos.cloud.CloudObject} request The
+ *     request proto
+ * @param {?Object<string, string>} metadata User defined
+ *     call metadata
+ * @param {function(?grpc.web.RpcError, ?proto.poc.protos.cloud.CloudObject)}
+ *     callback The callback function(error, response)
+ * @return {!grpc.web.ClientReadableStream<!proto.poc.protos.cloud.CloudObject>|undefined}
+ *     The XHR Node Readable Stream
+ */
+proto.poc.protos.cloud.CloudClient.prototype.subscribe =
+    function(request, metadata, callback) {
+  return this.client_.rpcCall(this.hostname_ +
+      '/poc.protos.cloud.Cloud/Subscribe',
+      request,
+      metadata || {},
+      methodDescriptor_Cloud_Subscribe,
+      callback);
+};
+
+
+/**
+ * @param {!proto.poc.protos.cloud.CloudObject} request The
+ *     request proto
+ * @param {?Object<string, string>=} metadata User defined
+ *     call metadata
+ * @return {!Promise<!proto.poc.protos.cloud.CloudObject>}
+ *     Promise that resolves to the response
+ */
+proto.poc.protos.cloud.CloudPromiseClient.prototype.subscribe =
+    function(request, metadata) {
+  return this.client_.unaryCall(this.hostname_ +
+      '/poc.protos.cloud.Cloud/Subscribe',
+      request,
+      metadata || {},
+      methodDescriptor_Cloud_Subscribe);
+};
+
+
+/**
+ * @const
+ * @type {!grpc.web.MethodDescriptor<
+ *   !proto.poc.protos.cloud.CloudObject,
  *   !proto.poc.protos.cloud.OperationResult>}
  */
 const methodDescriptor_Cloud_Save = new grpc.web.MethodDescriptor(
