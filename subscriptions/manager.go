@@ -132,9 +132,11 @@ func (sm *SubscriptionManager) processObject(obj *nodes.ISO) bool {
 				log.WithFields(log.Fields{"error": err}).Fatal("Could not unmarshal Acknowledge from any field")
 			}
 			log.WithFields(log.Fields{"subscriptionId": subId, "id": obj.CloudObj.Id}).Debug("received ACK from client")
+
+			return true
 		}
 	}
-	return true
+	return false
 }
 
 func (sm *SubscriptionManager) Stop() {

@@ -21,7 +21,7 @@ import (
 )
 
 func main() {
-	cfg := config.Init("config.yml").Client
+	cfg := config.Init("config-client-leaderboard.yml").Client
 
 	// Set up a connection to the server.
 	conn, err := grpc.NewClient(cfg.ServerAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -113,6 +113,8 @@ func main() {
 	go func() {
 		myRouter := mux.NewRouter().StrictSlash(true)
 		myRouter.HandleFunc("/leaderboard", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(leaderboard)
 		})
 		log.Fatal(http.ListenAndServe(":3000", myRouter))

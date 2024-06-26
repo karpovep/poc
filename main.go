@@ -26,7 +26,7 @@ func main() {
 	// bind OS events to the signal channel
 	signal.Notify(stopChan, syscall.SIGTERM, syscall.SIGINT)
 
-	cfg := config.Init("config.yml")
+	cfg := config.Init("config-server-node-3.yml")
 	logger.Init(cfg.Logger)
 
 	// start the app

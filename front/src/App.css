@@ -12,7 +12,7 @@ body, html {
 
 .App {
     text-align: center;
-    min-height: 100vh; /* Зміна тут */
+    /*min-height: 50vh; !* Зміна тут *!*/
     display: flex;
     flex-direction: column;
     justify-content: center;

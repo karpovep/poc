@@ -25,7 +25,7 @@ function App() {
         if (!polling) {
             setPolling(true)
             fetchMessages(); // initial fetch
-            interval = setInterval(fetchMessages, 5000); // fetch every 5 seconds
+            interval = setInterval(fetchMessages, 1000); // fetch every 5 seconds
             setPolling(false)
         }
         return () => clearInterval(interval);

@@ -19,7 +19,7 @@ import (
 )
 
 func main() {
-	cfg := config.Init("config.yml").Client
+	cfg := config.Init("config-client-leaderboard.yml").Client
 
 	// Set up a connection to the server.
 	conn, err := grpc.NewClient(cfg.ServerAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -76,7 +76,7 @@ func main() {
 
 	go func() {
 		for {
-			time.Sleep(time.Second * 5)
+			time.Sleep(time.Second / 2)
 			val := &cloud.ParticipantPointsEntity{Name: cfg.ClientId, Points: int32(rand.Intn(100))}
 			serialized, err := proto.Marshal(val)
 			if err != nil {
