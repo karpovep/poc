@@ -8,6 +8,7 @@ require (
 	github.com/gocql/gocql v0.0.0-20210413161705-87a5d7a5ff74
 	github.com/golang/mock v1.5.0
 	github.com/google/uuid v1.6.0
+	github.com/gorilla/mux v1.8.1
 	github.com/ilyakaznacheev/cleanenv v1.2.5
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.7.0

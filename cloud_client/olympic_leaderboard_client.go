@@ -2,10 +2,13 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"github.com/gorilla/mux"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/anypb"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"poc/config"
@@ -105,6 +108,14 @@ func main() {
 			}
 			log.Printf("OperationResult: %s", opRes.Status)
 		}
+	}()
+
+	go func() {
+		myRouter := mux.NewRouter().StrictSlash(true)
+		myRouter.HandleFunc("/leaderboard", func(w http.ResponseWriter, r *http.Request) {
+			json.NewEncoder(w).Encode(leaderboard)
+		})
+		log.Fatal(http.ListenAndServe(":3000", myRouter))
 	}()
 
 	//hang the process
