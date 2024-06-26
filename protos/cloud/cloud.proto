@@ -30,6 +30,20 @@ message TestEntity {
     string name = 1;
 }
 
+message ParticipantPointsEntity {
+    string name = 1;
+    int32 points = 2;
+}
+
+message Participant {
+    string name = 1;
+    int32 score = 2;
+}
+
+message Leaderboard {
+    repeated Participant participants = 1;
+}
+
 message SubscribeRequest {
     string type = 1;
 }

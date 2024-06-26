@@ -33,24 +33,19 @@ func main() {
 	}(conn)
 	c := cloud.NewCloudClient(conn)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
-
-	val := &cloud.TestEntity{Name: "First Cloud Client"}
+	leaderboard := map[string]int32{}
 
 	go func() {
-		time.Sleep(time.Second * 5) // subscribe after 3 seconds
+		time.Sleep(time.Second * 5)
 		subscribeRequest := &cloud.SubscribeRequest{}
-		typeToSubscribeTo := string(val.ProtoReflect().Descriptor().FullName())
+		dummyEntity := &cloud.ParticipantPointsEntity{}
+		typeToSubscribeTo := string(dummyEntity.ProtoReflect().Descriptor().FullName())
 		subscribeRequest.Type = typeToSubscribeTo
 		serializedReq, err := proto.Marshal(subscribeRequest)
 		if err != nil {
 			log.Fatal("could not serialize", err)
 		}
 		msg := &anypb.Any{TypeUrl: string(subscribeRequest.ProtoReflect().Descriptor().FullName()), Value: serializedReq}
-		//subscribeContext, cancelSubCtx := context.WithCancel(context.Background())
-		//defer cancelSubCtx()
-		//stream, err := c.Subscribe(subscribeContext)
 		stream, err := c.Subscribe(context.Background())
 		if err != nil {
 			log.Fatal("Subscribe error", err)
@@ -67,15 +62,20 @@ func main() {
 			if err != nil {
 				log.Fatal("stream.Recv error", err)
 			}
-			var ent cloud.TestEntity
+			var ent cloud.ParticipantPointsEntity
 			if err := obj.Entity.UnmarshalTo(&ent); err != nil {
-				log.Fatalf("Could not unmarshal TestEntity from any field: %s", err)
+				log.Fatalf("Could not unmarshal ParticipantPointsEntity from any field: %s", err)
 			}
 
-			log.Println("received obj", ent.Name)
+			log.Println("score message:", ent.Name, ent.Points)
+			score, ok := leaderboard[ent.Name]
+			if !ok {
+				score = 0
+			}
+			leaderboard[ent.Name] = score + ent.Points
 
 			time.Sleep(time.Second * 3)
-			ack := &cloud.Acknowledge{}
+			ack := &cloud.Acknowledge{FinalizeObject: true}
 			serializedAck, _ := proto.Marshal(ack)
 			msg := &anypb.Any{TypeUrl: string(ack.ProtoReflect().Descriptor().FullName()), Value: serializedAck}
 			_ = stream.Send(&cloud.CloudObject{Entity: msg})
@@ -83,17 +83,29 @@ func main() {
 		}
 	}()
 
-	time.Sleep(time.Second)
-	serialized, err := proto.Marshal(val)
-	if err != nil {
-		log.Fatal("could not serialize", err)
-	}
-	msg := &anypb.Any{TypeUrl: string(val.ProtoReflect().Descriptor().FullName()), Value: serialized}
-	opRes, err := c.Save(ctx, &cloud.CloudObject{Entity: msg})
-	if err != nil {
-		log.Fatalf("could not save: %v", err)
-	}
-	log.Printf("OperationResult: %s", opRes.Status)
+	//broadcast leaderboard info
+	go func() {
+		for {
+			time.Sleep(time.Second * 10)
+			val := &cloud.Leaderboard{Participants: make([]*cloud.Participant, len(leaderboard))}
+			for key, value := range leaderboard {
+				val.Participants = append(val.Participants, &cloud.Participant{
+					Name:  key,
+					Score: value,
+				})
+			}
+			serialized, err := proto.Marshal(val)
+			if err != nil {
+				log.Fatal("could not serialize", err)
+			}
+			msg := &anypb.Any{TypeUrl: string(val.ProtoReflect().Descriptor().FullName()), Value: serialized}
+			opRes, err := c.Save(context.Background(), &cloud.CloudObject{Entity: msg})
+			if err != nil {
+				log.Fatalf("could not save: %v", err)
+			}
+			log.Printf("OperationResult: %s", opRes.Status)
+		}
+	}()
 
 	//hang the process
 	done := make(chan bool, 1)

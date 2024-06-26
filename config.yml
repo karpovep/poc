@@ -2,10 +2,11 @@ nodeId: node-1
 logger:
   level: debug
 nodeServer:
-  port: :40042
+  port: :40041
 server:
-  port: :50052
+  port: :50051
   nodes:
+    - localhost:40042
     - localhost:40043
 repository:
   type: cassandra
@@ -15,4 +16,5 @@ cassandra:
   keyspace: cloud
   templatesRoot: repository/cassandra/queries/templates
 client:
-  serverAddress: localhost:50052
+  serverAddress: localhost:50051
+  clientId: "Smith"

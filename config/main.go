@@ -32,6 +32,7 @@ type (
 
 	ClientConfig struct {
 		ServerAddress string `yaml:"serverAddress" env:"SERVER_ADDRESS" env-default:"localhost:50051"`
+		ClientId      string `yaml:"clientId" env:"CLIENT_ID" env-default:"unknown-client"`
 	}
 
 	CloudConfig struct {

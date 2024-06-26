@@ -19,15 +19,15 @@ test:
 lint:
 	golangci-lint run
 
-mock-gen:
+mock_gen:
 	# go get github.com/golang/mock/gomock
 	# go get github.com/golang/mock/mockgen
-	mockgen -destination=bus/bus_mock/main.go -package=bus_mock poc/bus IEventBus
-	mockgen -destination=protos/cloud/cloud_mock/cloud_grpc.pb.go -package=cloud_mock poc/protos/cloud Cloud_SubscribeServer
-	mockgen -destination=utils/utils_mock/main.go -package=utils_mock poc/utils IUtils
-	mockgen -destination=utils/utils_mock/cancellable_timer.go -package=utils_mock poc/utils ICancellableTimer
-	mockgen -destination=app/app_mock/context.go -package=app_mock poc/app IAppContext
-	mockgen -destination=repository/repository_mock/main.go -package=repository_mock poc/repository IRepository
+	mockgen --build_flags=--mod=mod -destination=bus/bus_mock/main.go -package=bus_mock poc/bus IEventBus
+	mockgen --build_flags=--mod=mod -destination=protos/cloud/cloud_mock/cloud_grpc.pb.go -package=cloud_mock poc/protos/cloud Cloud_SubscribeServer
+	mockgen --build_flags=--mod=mod -destination=utils/utils_mock/main.go -package=utils_mock poc/utils IUtils
+	mockgen --build_flags=--mod=mod -destination=utils/utils_mock/cancellable_timer.go -package=utils_mock poc/utils ICancellableTimer
+	mockgen --build_flags=--mod=mod -destination=app/app_mock/context.go -package=app_mock poc/app IAppContext
+	mockgen --build_flags=--mod=mod -destination=repository/repository_mock/main.go -package=repository_mock poc/repository IRepository
 
 compile_protos:
 	protoc --go_out=. --go_opt=paths=source_relative \
@@ -45,5 +45,5 @@ install:
 	go get -u github.com/golang/protobuf/{proto,protoc-gen-go}
 	go get -u google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 
-vendor:
+go_vendor:
 	go mod vendor

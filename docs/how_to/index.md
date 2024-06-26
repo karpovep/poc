@@ -37,7 +37,7 @@ make lint
 
 * To generate mocks
 ```$bash
-make mock_gen.sh
+make mock_gen
 ```
 
 * To run tests

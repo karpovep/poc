@@ -107,6 +107,7 @@ func (s *GrpcServer) Save(ctx context.Context, cloudObj *cloud.CloudObject) (*cl
 	cloudObj.Id = s.Utils.GenerateTimeUuid()
 	iso := model.NewIsoFromCloudObject(cloudObj)
 	iso.Metadata.InitialNodeId = s.Config.NodeId
+	iso.SenderNodeId = s.Config.NodeId
 	s.EventBus.Publish(s.inboundChannelName, iso)
 	return &cloud.OperationResult{Status: cloud.OperationStatus_OK}, nil
 }

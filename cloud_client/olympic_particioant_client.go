@@ -6,6 +6,7 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 	"io"
 	"log"
+	"math/rand"
 	"os"
 	"os/signal"
 	"poc/config"
@@ -33,24 +34,17 @@ func main() {
 	}(conn)
 	c := cloud.NewCloudClient(conn)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
-
-	val := &cloud.TestEntity{Name: "First Cloud Client"}
-
 	go func() {
-		time.Sleep(time.Second * 5) // subscribe after 3 seconds
+		time.Sleep(time.Second)
 		subscribeRequest := &cloud.SubscribeRequest{}
-		typeToSubscribeTo := string(val.ProtoReflect().Descriptor().FullName())
+		dummyEntity := &cloud.Leaderboard{}
+		typeToSubscribeTo := string(dummyEntity.ProtoReflect().Descriptor().FullName())
 		subscribeRequest.Type = typeToSubscribeTo
 		serializedReq, err := proto.Marshal(subscribeRequest)
 		if err != nil {
 			log.Fatal("could not serialize", err)
 		}
 		msg := &anypb.Any{TypeUrl: string(subscribeRequest.ProtoReflect().Descriptor().FullName()), Value: serializedReq}
-		//subscribeContext, cancelSubCtx := context.WithCancel(context.Background())
-		//defer cancelSubCtx()
-		//stream, err := c.Subscribe(subscribeContext)
 		stream, err := c.Subscribe(context.Background())
 		if err != nil {
 			log.Fatal("Subscribe error", err)
@@ -67,33 +61,35 @@ func main() {
 			if err != nil {
 				log.Fatal("stream.Recv error", err)
 			}
-			var ent cloud.TestEntity
+			var ent cloud.Leaderboard
 			if err := obj.Entity.UnmarshalTo(&ent); err != nil {
-				log.Fatalf("Could not unmarshal TestEntity from any field: %s", err)
+				log.Fatalf("Could not unmarshal Leaderboard from any field: %s", err)
 			}
 
-			log.Println("received obj", ent.Name)
-
-			time.Sleep(time.Second * 3)
+			log.Println("Leaderboard message:", ent)
 			ack := &cloud.Acknowledge{}
 			serializedAck, _ := proto.Marshal(ack)
 			msg := &anypb.Any{TypeUrl: string(ack.ProtoReflect().Descriptor().FullName()), Value: serializedAck}
 			_ = stream.Send(&cloud.CloudObject{Entity: msg})
-			log.Println("ACK SENT - ", ent.Name)
 		}
 	}()
 
-	time.Sleep(time.Second)
-	serialized, err := proto.Marshal(val)
-	if err != nil {
-		log.Fatal("could not serialize", err)
-	}
-	msg := &anypb.Any{TypeUrl: string(val.ProtoReflect().Descriptor().FullName()), Value: serialized}
-	opRes, err := c.Save(ctx, &cloud.CloudObject{Entity: msg})
-	if err != nil {
-		log.Fatalf("could not save: %v", err)
-	}
-	log.Printf("OperationResult: %s", opRes.Status)
+	go func() {
+		for {
+			time.Sleep(time.Second * 5)
+			val := &cloud.ParticipantPointsEntity{Name: cfg.ClientId, Points: int32(rand.Intn(100))}
+			serialized, err := proto.Marshal(val)
+			if err != nil {
+				log.Fatal("could not serialize", err)
+			}
+			msg := &anypb.Any{TypeUrl: string(val.ProtoReflect().Descriptor().FullName()), Value: serialized}
+			opRes, err := c.Save(context.Background(), &cloud.CloudObject{Entity: msg})
+			if err != nil {
+				log.Fatalf("could not save: %v", err)
+			}
+			log.Printf("OperationResult: %s", opRes.Status)
+		}
+	}()
 
 	//hang the process
 	done := make(chan bool, 1)
