@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+option go_package = "poc/protos/cloud";
+import "google/protobuf/any.proto";
+
+package poc.protos.cloud;
+
+// service definition.
+service Cloud {
+    rpc Save (CloudObject) returns (OperationResult) {}
+    rpc Subscribe (stream CloudObject) returns (stream CloudObject) {}
+}
+
+message CloudObject {
+    string id = 1;
+    google.protobuf.Any entity = 2;
+    bool isFinal = 3;
+}
+
+enum OperationStatus {
+    OK = 0;
+    ERROR = 1;
+}
+
+message OperationResult {
+    OperationStatus status = 1;
+}
+
+message TestEntity {
+    string name = 1;
+}
+
+message ParticipantPointsEntity {
+    string name = 1;
+    int32 points = 2;
+}
+
+message Participant {
+    string name = 1;
+    int32 score = 2;
+}
+
+message Leaderboard {
+    repeated Participant participants = 1;
+}
+
+message SubscribeRequest {
+    string type = 1;
+}
+
+message Acknowledge {
+    bool finalizeObject = 1;
+}

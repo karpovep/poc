@@ -1,0 +1,11 @@
+.App {
+  background: linear-gradient(rgba(250,0,0,0.5), transparent);
+  background-color: orange;
+  width: 100%;
+  max-width: 100%!important;
+  height: 100%;
+  margin: 0!important;
+  padding: 0!important;
+  height: 1500px;
+}
+
